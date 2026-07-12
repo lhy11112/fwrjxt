@@ -163,6 +163,54 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
     // 36. hsim_mh_yycz_log (MySQL: wjbd_mh_yycz_log, 13列)
     sqlx::query("CREATE TABLE IF NOT EXISTS hsim_mh_yycz_log (id TEXT PRIMARY KEY, yymc TEXT, yymk TEXT, rzlx INTEGER, rznr TEXT, czyhm TEXT, czyhxm TEXT, czip TEXT, cjrid TEXT, cjsj TEXT, czrid TEXT, czsj TEXT, ljsc INTEGER);").execute(pool).await?;
 
-    tracing::info!("Database schema migrations completed (36 hsim_ tables)");
+    // ===== 补全的系统表（数据字典 / 用户 / 部队）=====
+
+    // 37. hsim_wwct_zdgl (MySQL: wjbd_wwct_zdgl —— 数据字典主表)
+    sqlx::query("CREATE TABLE IF NOT EXISTS hsim_wwct_zdgl (id TEXT PRIMARY KEY, dict_name TEXT, dict_code TEXT, description TEXT, del_flag INTEGER DEFAULT 0, type INTEGER DEFAULT 0, create_by TEXT, create_time TEXT, update_by TEXT, update_time TEXT);").execute(pool).await?;
+
+    // 38. hsim_wwct_zdxq (MySQL: wjbd_wwct_zdxq —— 数据字典明细)
+    sqlx::query("CREATE TABLE IF NOT EXISTS hsim_wwct_zdxq (id TEXT PRIMARY KEY, dict_id TEXT, item_text TEXT, item_value TEXT, description TEXT, sort_order INTEGER DEFAULT 0, status INTEGER DEFAULT 1, create_by TEXT, create_time TEXT, update_by TEXT, update_time TEXT);").execute(pool).await?;
+
+    // 39. hsim_mh_yh (MySQL: wjbd_mh_yh —— 用户)
+    sqlx::query("CREATE TABLE IF NOT EXISTS hsim_mh_yh (id TEXT PRIMARY KEY, username TEXT UNIQUE, realname TEXT, password TEXT, salt TEXT, avatar TEXT, birthday TEXT, sex INTEGER, email TEXT, phone TEXT, org_code TEXT, status INTEGER DEFAULT 1, del_flag INTEGER DEFAULT 0, bdnm TEXT, yhjbnm TEXT, post TEXT, create_time TEXT, update_time TEXT);").execute(pool).await?;
+
+    // 40. hsim_mh_bd (MySQL: wjbd_mh_bd —— 部队/部门)
+    sqlx::query("CREATE TABLE IF NOT EXISTS hsim_mh_bd (bdnm TEXT PRIMARY KEY, bdmc TEXT, sjbdnm TEXT, bdjc TEXT, bdxh TEXT, bz TEXT);").execute(pool).await?;
+
+    // 为字典表补充 sjbdnm 列到部队表（部队上下级关系，list_zzll_bd 树用）
+    let _ = sqlx::query("ALTER TABLE hsim_zzll_bd ADD COLUMN sjbdnm TEXT;").execute(pool).await;
+
+    seed_dict_defaults(pool).await?;
+
+    tracing::info!("Database schema migrations completed (40 hsim_ tables)");
+    Ok(())
+}
+
+/// 初始化常用数据字典（若为空）——供前端下拉选择使用
+async fn seed_dict_defaults(pool: &SqlitePool) -> anyhow::Result<()> {
+    let cnt: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM hsim_wwct_zdgl").fetch_one(pool).await?;
+    if cnt.0 > 0 {
+        return Ok(());
+    }
+    // (dict_code, dict_name, [(text, value), ...])
+    let dicts: &[(&str, &str, &[(&str, &str)])] = &[
+        ("auth_status", "授权状态", &[("白名单", "1"), ("黑名单", "2"), ("未授权", "3")]),
+        ("device_type", "设备类型", &[("侦测设备", "DETECT"), ("干扰设备", "DISTURB"), ("诱骗设备", "TRAP")]),
+        ("gjlx", "告警类型", &[("入侵告警", "1"), ("低电量告警", "2"), ("失联告警", "3")]),
+        ("clzt", "处理状态", &[("未处理", "0"), ("已处理", "1")]),
+        ("ky_lx", "空域类型", &[("禁飞区", "restricted"), ("预警区", "warning"), ("管控区", "control")]),
+        ("tyzt", "推演状态", &[("进行中", "0"), ("已完成", "1")]),
+    ];
+    for (code, name, items) in dicts {
+        let dict_id = uuid::Uuid::new_v4().simple().to_string();
+        sqlx::query("INSERT INTO hsim_wwct_zdgl (id, dict_name, dict_code, del_flag, type, create_time) VALUES (?,?,?,0,0,datetime('now'))")
+            .bind(&dict_id).bind(name).bind(code).execute(pool).await?;
+        for (i, (text, value)) in items.iter().enumerate() {
+            let item_id = uuid::Uuid::new_v4().simple().to_string();
+            sqlx::query("INSERT INTO hsim_wwct_zdxq (id, dict_id, item_text, item_value, sort_order, status, create_time) VALUES (?,?,?,?,?,1,datetime('now'))")
+                .bind(&item_id).bind(&dict_id).bind(text).bind(value).bind(i as i64).execute(pool).await?;
+        }
+    }
+    tracing::info!("Seeded default data dictionaries");
     Ok(())
 }
