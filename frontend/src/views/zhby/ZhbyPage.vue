@@ -1,5 +1,32 @@
-<script setup lang="ts">/** 综合兵要 */ import { ref, onMounted } from 'vue'; import api from '@/api/index';
-const terrains = ref<any[]>([])
-onMounted(async () => { try { const { data } = await api.get('/wrj/dxdm', { params: { page: 1, page_size: 50 } }); terrains.value = data.result?.records || []; } catch {} })</script>
-<template><div class="page"><div class="page-hdr"><h2>综合兵要</h2><p>地形地貌数据与兵要地志</p></div><div class="page-bd"><el-table :data="terrains" border stripe size="small"><el-table-column prop="dmmc" label="地名"/><el-table-column prop="jd" label="经度"/><el-table-column prop="wd" label="纬度"/><el-table-column prop="dxdmlx" label="地形类型"/><el-table-column prop="mj" label="面积"/><el-table-column prop="dlwz" label="地理位置"/></el-table><el-empty v-if="!terrains.length" description="暂无兵要数据"/></div></div></template>
-<style scoped>.page{width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-canvas);color:var(--fg-1)}.page-hdr{padding:20px 24px 12px;border-bottom:1px solid var(--divider)}.page-hdr h2{font-size:18px;font-weight:700;margin:0}.page-hdr p{font-size:13px;color:var(--fg-3);margin:4px 0 0}.page-bd{flex:1;padding:16px 24px;overflow-y:auto}</style>
+<template>
+  <CrudPage
+    title="综合兵要"
+    subtitle="地形地貌兵要地理信息管理"
+    :api="dxdmApi"
+    :columns="columns"
+    :form-fields="formFields"
+    :search-fields="[{ prop: 'dmmc', label: '地貌名称' }, { prop: 'dxdmlx', label: '类型' }]"
+  />
+</template>
+
+<script setup lang="ts">
+import CrudPage from '@/components/CrudPage.vue'
+import { dxdmApi } from '@/api/wrj'
+
+const columns = [
+  { prop: 'dmmc', label: '地貌名称', minWidth: 160 },
+  { prop: 'dxdmlx', label: '地形地貌类型', width: 140 },
+  { prop: 'jd', label: '经度', width: 110 },
+  { prop: 'wd', label: '纬度', width: 110 },
+  { prop: 'mj', label: '面积', width: 100 },
+  { prop: 'dlwz', label: '地理位置', minWidth: 180 },
+]
+const formFields = [
+  { prop: 'dmmc', label: '地貌名称', required: true },
+  { prop: 'dxdmlx', label: '地形地貌类型' },
+  { prop: 'jd', label: '经度' },
+  { prop: 'wd', label: '纬度' },
+  { prop: 'mj', label: '面积' },
+  { prop: 'dlwz', label: '地理位置', type: 'textarea' as const, span: 24 },
+]
+</script>
