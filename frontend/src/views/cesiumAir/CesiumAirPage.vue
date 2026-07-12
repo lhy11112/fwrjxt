@@ -1,5 +1,52 @@
-<script setup lang="ts">/** 空域管理 */ import { ref, onMounted } from 'vue'; import api from '@/api/index';
-const airspaces = ref<any[]>([])
-onMounted(async () => { try { const { data } = await api.get('/airspace', { params: { page: 1, page_size: 50 } }); airspaces.value = data.result?.records || []; } catch {} })</script>
-<template><div class="page"><div class="page-hdr"><h2>空域管理</h2><p>空域定义与3D可视化</p></div><div class="page-bd"><el-table :data="airspaces" border stripe size="small"><el-table-column prop="mc" label="名称"/><el-table-column prop="lx" label="类型"/><el-table-column prop="xz" label="形状"/><el-table-column prop="bj" label="半径"/><el-table-column prop="zxgd" label="最小高度"/><el-table-column prop="zdgd" label="最大高度"/><el-table-column prop="sfqy" label="启用"/></el-table><el-empty v-if="!airspaces.length" description="暂无空域数据"/></div></div></template>
-<style scoped>.page{width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-canvas);color:var(--fg-1)}.page-hdr{padding:20px 24px 12px;border-bottom:1px solid var(--divider)}.page-hdr h2{font-size:18px;font-weight:700;margin:0}.page-hdr p{font-size:13px;color:var(--fg-3);margin:4px 0 0}.page-bd{flex:1;padding:16px 24px;overflow-y:auto}</style>
+<template>
+  <CrudPage
+    title="空域管理"
+    subtitle="管控空域定义与管理（禁飞区/预警区/管控区）"
+    :api="airspaceApi"
+    :columns="columns"
+    :form-fields="formFields"
+    :search-fields="[{ prop: 'mc', label: '空域名称' }]"
+    :default-form="{ lx: 'restricted', xz: 'circle', sfqy: 1 }"
+  />
+</template>
+
+<script setup lang="ts">
+import CrudPage from '@/components/CrudPage.vue'
+import { airspaceApi } from '@/api/dataManage'
+
+const lxOptions = [
+  { label: '禁飞区', value: 'restricted' },
+  { label: '预警区', value: 'warning' },
+  { label: '管控区', value: 'control' },
+]
+const xzOptions = [
+  { label: '圆形', value: 'circle' },
+  { label: '多边形', value: 'polygon' },
+  { label: '矩形', value: 'rectangle' },
+]
+const lxLabel = (v: string) => lxOptions.find(o => o.value === v)?.label || v
+
+const columns = [
+  { prop: 'mc', label: '名称', minWidth: 150 },
+  { prop: 'lx', label: '类型', width: 100, format: (v: string) => lxLabel(v) },
+  { prop: 'xz', label: '形状', width: 90 },
+  { prop: 'zxdjd', label: '中心经度', width: 110 },
+  { prop: 'zxdwd', label: '中心纬度', width: 110 },
+  { prop: 'bj', label: '半径(m)', width: 100 },
+  { prop: 'zxgd', label: '最低高度', width: 90 },
+  { prop: 'zdgd', label: '最高高度', width: 90 },
+  { prop: 'sfqy', label: '启用', width: 70, format: (v: number) => (v === 1 ? '是' : '否') },
+]
+const formFields = [
+  { prop: 'mc', label: '空域名称', required: true },
+  { prop: 'lx', label: '类型', type: 'select' as const, options: lxOptions },
+  { prop: 'xz', label: '形状', type: 'select' as const, options: xzOptions },
+  { prop: 'zxdjd', label: '中心经度', type: 'number' as const, precision: 6 },
+  { prop: 'zxdwd', label: '中心纬度', type: 'number' as const, precision: 6 },
+  { prop: 'bj', label: '半径(m)', type: 'number' as const },
+  { prop: 'zxgd', label: '最低高度(m)', type: 'number' as const },
+  { prop: 'zdgd', label: '最高高度(m)', type: 'number' as const },
+  { prop: 'sfqy', label: '是否启用', type: 'switch' as const },
+  { prop: 'bz', label: '备注', type: 'textarea' as const, span: 24 },
+]
+</script>

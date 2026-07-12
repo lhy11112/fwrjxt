@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ChatPanel: typeof import('./components/ChatPanel.vue')['default']
+    CrudPage: typeof import('./components/CrudPage.vue')['default']
     DetectionPanel: typeof import('./components/panels/DetectionPanel.vue')['default']
     DeviceConfigDialog: typeof import('./components/DeviceConfigDialog.vue')['default']
     DeviceDialog: typeof import('./components/DeviceDialog.vue')['default']

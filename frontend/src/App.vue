@@ -22,6 +22,23 @@ const currentTime = ref('')
 const currentDate = ref('')
 const rightPanelTab = ref<'detection' | 'targets' | 'chat'>('detection')
 
+// 业务功能菜单（迁移自反无系统的 portal 各模块）
+const businessMenus = [
+  { path: '/daily-topic', title: '综合态势' },
+  { path: '/gjhf', title: '告警回放' },
+  { path: '/command-control', title: '指挥控制' },
+  { path: '/cesium-air', title: '空域管理' },
+  { path: '/zymb', title: '重要目标' },
+  { path: '/zhby', title: '综合兵要' },
+  { path: '/zbxx', title: '装备信息' },
+  { path: '/fwzf', title: '反无战法' },
+  { path: '/bxpz', title: '编携配装' },
+  { path: '/signal-interference', title: '信号干扰' },
+  { path: '/navigation-deception', title: '导航诱骗' },
+  { path: '/simulated-exercise', title: '模拟推演' },
+]
+const businessActive = computed(() => businessMenus.some(m => m.path === route.path))
+
 // 对话框状态
 const showDeviceDialog = ref(false)
 const showModelDialog = ref(false)
@@ -118,9 +135,19 @@ function handleResetView() {
           <a class="nav-tab" @click.prevent="showDeviceDialog = true" href="#">
             <Icon name="device" :size="16" class="tab-icon" /><span class="tab-label">设备管理</span>
           </a>
-          <router-link to="/data-manage/devices" class="nav-tab" :class="{ active: route.path.startsWith('/data-manage') }">
+          <router-link to="/data-manage2" class="nav-tab" :class="{ active: route.path.startsWith('/data-manage') }">
             <Icon name="device" :size="16" class="tab-icon" /><span class="tab-label">数据管理</span>
           </router-link>
+          <el-dropdown trigger="hover" @command="(c: string) => router.push(c)">
+            <span class="nav-tab" :class="{ active: businessActive }">
+              <Icon name="list" :size="16" class="tab-icon" /><span class="tab-label">业务功能</span>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-for="m in businessMenus" :key="m.path" :command="m.path">{{ m.title }}</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <a class="nav-tab" @click.prevent="showModelDialog = true" href="#">
             <Icon name="model" :size="16" class="tab-icon" /><span class="tab-label">模型管理</span>
           </a>

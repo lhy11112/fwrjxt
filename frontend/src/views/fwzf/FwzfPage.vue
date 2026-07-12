@@ -1,5 +1,34 @@
-<script setup lang="ts">/** 反无战法 */ import { ref, onMounted } from 'vue'; import api from '@/api/index';
-const tactics = ref<any[]>([])
-onMounted(async () => { try { const { data } = await api.get('/wrj/fwzf', { params: { page: 1, page_size: 50 } }); tactics.value = data.result?.records || []; } catch {} })</script>
-<template><div class="page"><div class="page-hdr"><h2>反无战法</h2><p>反无人机战术战法知识库</p></div><div class="page-bd"><el-table :data="tactics" border stripe size="small"><el-table-column prop="mc" label="战法名称"/><el-table-column prop="fl" label="分类"/><el-table-column prop="zfgs" label="战法概述"/><el-table-column prop="zzcj" label="作战场景"/></el-table><el-empty v-if="!tactics.length" description="暂无战法数据"/></div></div></template>
-<style scoped>.page{width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-canvas);color:var(--fg-1)}.page-hdr{padding:20px 24px 12px;border-bottom:1px solid var(--divider)}.page-hdr h2{font-size:18px;font-weight:700;margin:0}.page-hdr p{font-size:13px;color:var(--fg-3);margin:4px 0 0}.page-bd{flex:1;padding:16px 24px;overflow-y:auto}</style>
+<template>
+  <CrudPage
+    title="反无战法"
+    subtitle="反无人机战术战法知识库"
+    :api="fwzfApi"
+    :columns="columns"
+    :form-fields="formFields"
+    :search-fields="[{ prop: 'mc', label: '战法名称' }, { prop: 'fl', label: '分类' }]"
+  />
+</template>
+
+<script setup lang="ts">
+import CrudPage from '@/components/CrudPage.vue'
+import { fwzfApi } from '@/api/wrj'
+
+const columns = [
+  { prop: 'mc', label: '战法名称', minWidth: 150 },
+  { prop: 'fl', label: '分类', width: 120 },
+  { prop: 'zfgs', label: '战法概述', minWidth: 200 },
+  { prop: 'zzcj', label: '组织程序', minWidth: 160 },
+  { prop: 'jbzf', label: '具体战法', minWidth: 160 },
+  { prop: 'remark', label: '备注', minWidth: 140 },
+]
+const formFields = [
+  { prop: 'mc', label: '战法名称', required: true },
+  { prop: 'fl', label: '分类' },
+  { prop: 'zfgs', label: '战法概述', type: 'textarea' as const, span: 24 },
+  { prop: 'zzcj', label: '组织程序', type: 'textarea' as const, span: 24 },
+  { prop: 'jbzf', label: '具体战法', type: 'textarea' as const, span: 24 },
+  { prop: 'jtxdff', label: '具体行动方法', type: 'textarea' as const, span: 24 },
+  { prop: 'zfyzqk', label: '战法运用情况', type: 'textarea' as const, span: 24 },
+  { prop: 'remark', label: '备注', type: 'textarea' as const, span: 24 },
+]
+</script>
