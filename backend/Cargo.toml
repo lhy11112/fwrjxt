@@ -1,0 +1,77 @@
+[package]
+name = "hsimc2-backend"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "hsimc2-server"
+path = "src/main.rs"
+
+[[bin]]
+name = "migrate-data"
+path = "src/bin/migrate_data.rs"
+
+[[bin]]
+name = "import-data"
+path = "src/bin/import_data.rs"
+
+[dependencies]
+# Web framework
+axum = { version = "0.7", features = ["ws", "multipart"] }
+axum-extra = { version = "0.9", features = ["protobuf"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip"] }
+
+# Async runtime
+tokio = { workspace = true }
+tokio-stream = "0.1"
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
+
+# Geo / spatial
+geo = { version = "0.28", features = ["serde"] }
+geojson = "0.24"
+
+# Time / UUID
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Logging / observability
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["json", "env-filter"] }
+opentelemetry = { version = "0.24", features = ["metrics"] }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Config
+toml = "0.8"
+dotenvy = "0.15"
+
+# ML / 数值计算
+ndarray = "0.16"
+rand = "0.8"
+rand_distr = "0.4"
+
+# Scheduler
+cron = "0.13"
+
+# Embed static files
+rust-embed = "8"
+
+# Async trait
+async-trait = "0.1"
+
+# HTTP client (for external APIs)
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# WebSocket
+futures-util = "0.3"

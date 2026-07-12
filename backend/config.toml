@@ -1,0 +1,55 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+ws_port = 8081
+grpc_port = 50051
+enable_tls = false
+
+[database]
+path = "./data/hsimc2.db"
+max_connections = 10
+auto_migrate = true
+
+[storage]
+data_dir = "./data"
+sensor_data_dir = "./data/sensors"
+log_dir = "./data/logs"
+export_dir = "./data/exports"
+config_snapshot_dir = "./data/config_snapshots"
+sensor_retention_days = 30
+
+[sensor]
+data_dir = "./data/sensors"
+max_frame_buffer = 10000
+sample_rate_hz = 10.0
+time_sync_protocol = "PTP"
+
+[planner]
+max_interceptors = 20
+rrt_max_iterations = 5000
+replan_interval_ms = 500
+collision_radius_m = 10.0
+min_safe_distance_m = 50.0
+
+[threat]
+red_threshold = 0.75
+yellow_threshold = 0.4
+intent_model_path = "./models/intent.onnx"
+max_eval_time_ms = 500
+
+[map]
+# 地图瓦片服务器地址（外网/内网均可）
+tile_server_url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+# 本地缓存目录
+cache_dir = "./data/map_tiles"
+# 缓存过期时间（天）
+cache_ttl_days = 30
+# 默认中心点 [纬度, 经度]
+center_lat = 34.08
+center_lon = 108.94
+# 默认缩放级别
+default_zoom = 12
+
+[log]
+level = "info"
+format = "json"

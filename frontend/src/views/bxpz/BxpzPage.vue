@@ -1,0 +1,5 @@
+<script setup lang="ts">/** 编携配装 */ import { ref, onMounted } from 'vue'; import api from '@/api/index';
+const configs = ref<any[]>([])
+onMounted(async () => { try { const { data } = await api.get('/wrj/bxpz/tree'); configs.value = data.result || []; } catch {} })</script>
+<template><div class="page"><div class="page-hdr"><h2>编携配装</h2><p>装备编配与携行配装方案</p></div><div class="page-bd"><el-table :data="configs" border stripe size="small"><el-table-column prop="mc" label="名称"/><el-table-column prop="pid" label="上级ID"/><el-table-column prop="nr" label="内容"/></el-table><el-empty v-if="!configs.length" description="暂无编配数据"/></div></div></template>
+<style scoped>.page{width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-canvas);color:var(--fg-1)}.page-hdr{padding:20px 24px 12px;border-bottom:1px solid var(--divider)}.page-hdr h2{font-size:18px;font-weight:700;margin:0}.page-hdr p{font-size:13px;color:var(--fg-3);margin:4px 0 0}.page-bd{flex:1;padding:16px 24px;overflow-y:auto}</style>

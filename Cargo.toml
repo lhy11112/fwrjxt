@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "backend",
+    "sdk",
+    "proto",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["HSimC2 Team"]
+description = "HSimC2 - 反无人机一体化指挥控制平台 (Counter-UAV Integrated C2 Platform)"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+thiserror = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+prost = "0.13"
+tonic = { version = "0.12", features = ["tls"] }

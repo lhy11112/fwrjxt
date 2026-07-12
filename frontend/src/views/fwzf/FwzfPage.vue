@@ -1,0 +1,5 @@
+<script setup lang="ts">/** 反无战法 */ import { ref, onMounted } from 'vue'; import api from '@/api/index';
+const tactics = ref<any[]>([])
+onMounted(async () => { try { const { data } = await api.get('/wrj/fwzf', { params: { page: 1, page_size: 50 } }); tactics.value = data.result?.records || []; } catch {} })</script>
+<template><div class="page"><div class="page-hdr"><h2>反无战法</h2><p>反无人机战术战法知识库</p></div><div class="page-bd"><el-table :data="tactics" border stripe size="small"><el-table-column prop="mc" label="战法名称"/><el-table-column prop="fl" label="分类"/><el-table-column prop="zfgs" label="战法概述"/><el-table-column prop="zzcj" label="作战场景"/></el-table><el-empty v-if="!tactics.length" description="暂无战法数据"/></div></div></template>
+<style scoped>.page{width:100%;height:100%;display:flex;flex-direction:column;background:var(--bg-canvas);color:var(--fg-1)}.page-hdr{padding:20px 24px 12px;border-bottom:1px solid var(--divider)}.page-hdr h2{font-size:18px;font-weight:700;margin:0}.page-hdr p{font-size:13px;color:var(--fg-3);margin:4px 0 0}.page-bd{flex:1;padding:16px 24px;overflow-y:auto}</style>

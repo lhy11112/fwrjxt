@@ -1,0 +1,18 @@
+[package]
+name = "hsimc2-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "HSimC2 传感器软件开发工具包"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+async-trait = "0.1"

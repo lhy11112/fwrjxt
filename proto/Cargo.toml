@@ -1,0 +1,14 @@
+[package]
+name = "hsimc2-proto"
+version = "0.1.0"
+edition = "2021"
+description = "HSimC2 Protobuf 消息定义"
+
+[dependencies]
+prost = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+[build-dependencies]
+prost-build = "0.13"

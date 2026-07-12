@@ -1,0 +1,314 @@
+/* ============================================================
+   HSimC2 样式系统 — 设计令牌
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ---- 中性面 Neutral surfaces ---- */
+  --bg-canvas: #141414;
+  --bg-surface: #1f1f1f;
+  --bg-surface-2: #242424;
+  --bg-surface-3: #292929;
+  --bg-subtle-hover: #2d2d2d;
+  --bg-subtle-pressed: #262626;
+
+  /* ---- 描边 / 分隔 ---- */
+  --stroke-control: #525252;
+  --stroke-divider: #333333;
+  --divider: #3d3d3d;
+
+  /* ---- 文字 Neutral foreground ---- */
+  --fg-1: #f5f5f5;
+  --fg-2: #d6d6d6;
+  --fg-3: #adadad;
+  --fg-4: #767676;
+
+  /* ---- 品牌主色（通信蓝） ---- */
+  --brand-rest: #0f6cbd;
+  --brand-hover: #115ea3;
+  --brand-pressed: #0e4a78;
+  --brand-fg: #479ef5;
+  --brand-fg-hover: #62abf5;
+  --brand-subtle: rgba(71, 158, 245, 0.10);
+  --brand-selected: rgba(71, 158, 245, 0.16);
+
+  /* ---- 语义状态色（红/黄/绿 威胁语义） ---- */
+  --danger: #f1707b;
+  --danger-bg: rgba(209, 52, 56, 0.16);
+  --warning: #fbd561;
+  --warning-bg: rgba(250, 195, 60, 0.16);
+  --success: #6ccb6c;
+  --success-bg: rgba(92, 184, 92, 0.16);
+
+  /* ---- 兼容旧别名（渐进迁移用） ---- */
+  --bg-primary: var(--bg-canvas);
+  --bg-secondary: var(--bg-surface);
+  --bg-panel: var(--bg-surface);
+  --bg-card: var(--bg-surface-2);
+  --border-color: var(--stroke-divider);
+  --text-primary: var(--fg-1);
+  --text-secondary: var(--fg-3);
+  --accent-blue: var(--brand-fg);
+  --accent-red: var(--danger);
+  --accent-yellow: var(--warning);
+  --accent-green: var(--success);
+
+  /* ---- 圆角 Fluent 2 ---- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-circular: 9999px;
+  --panel-radius: var(--radius-lg);
+
+  /* ---- Elevation 阴影 ---- */
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.26), 0 0 2px rgba(0, 0, 0, 0.30);
+  --shadow-4: 0 2px 4px rgba(0, 0, 0, 0.28), 0 0 2px rgba(0, 0, 0, 0.30);
+  --shadow-8: 0 4px 8px rgba(0, 0, 0, 0.30), 0 0 2px rgba(0, 0, 0, 0.30);
+  --shadow-16: 0 8px 16px rgba(0, 0, 0, 0.32), 0 0 2px rgba(0, 0, 0, 0.30);
+  --shadow-64: 0 32px 64px rgba(0, 0, 0, 0.42), 0 0 8px rgba(0, 0, 0, 0.34);
+
+  /* ---- 科技辉光（深色主题点亮，浅色主题透明关闭） ---- */
+  --glow-accent: transparent;
+  --glow-soft: transparent;
+
+  /* ---- 面层阴影（浅色主题做 elevation 层次，深色主题用辉光故为 none） ---- */
+  --surface-shadow: none;
+
+  /* ---- 间距（4px 栅格） ---- */
+  --sp-xs: 4px;
+  --sp-s: 8px;
+  --sp-m: 12px;
+  --sp-l: 16px;
+  --sp-xl: 20px;
+  --sp-xxl: 24px;
+
+  /* ---- 字体 / 动效 ---- */
+  --font-base: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Cascadia Code', 'Cascadia Mono', 'Consolas', 'SF Mono', monospace;
+  --dur-fast: 100ms;
+  --dur-normal: 150ms;
+  --dur-slow: 200ms;
+  --ease-fluent: cubic-bezier(0.33, 0, 0.67, 1);
+  --ease-decel: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --transition-speed: var(--dur-normal);
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-base);
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  height: 100%;
+}
+
+/* ---- Fluent 焦点环（双环观感） ---- */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--bg-canvas), 0 0 0 3px var(--brand-fg);
+  border-radius: var(--radius-md);
+}
+
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--stroke-control);
+  border-radius: var(--radius-circular);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-4);
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   通用面板
+   ============================================================ */
+.panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--stroke-divider);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-m) var(--sp-l);
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-2);
+  letter-spacing: 0.2px;
+}
+
+.panel-body {
+  padding: var(--sp-m) var(--sp-l);
+}
+
+/* ============================================================
+   按钮 — Fluent 三态
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-s);
+  height: 32px;
+  padding: 0 var(--sp-m);
+  border: 1px solid var(--stroke-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-3);
+  color: var(--fg-1);
+  font-family: var(--font-base);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-normal) var(--ease-fluent),
+    border-color var(--dur-normal) var(--ease-fluent);
+}
+.btn:hover {
+  background: var(--bg-subtle-hover);
+  border-color: var(--stroke-control);
+}
+.btn:active {
+  background: var(--bg-subtle-pressed);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--brand-rest);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 0 14px var(--glow-accent);
+}
+.btn-primary:hover {
+  background: var(--brand-hover);
+  border-color: transparent;
+  box-shadow: 0 0 20px var(--glow-accent);
+}
+.btn-primary:active {
+  background: var(--brand-pressed);
+}
+
+.btn-subtle {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-2);
+}
+.btn-subtle:hover {
+  background: var(--bg-subtle-hover);
+  border-color: transparent;
+}
+.btn-subtle:active {
+  background: var(--bg-subtle-pressed);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--stroke-control);
+  color: var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger-bg);
+  border-color: transparent;
+}
+
+/* ============================================================
+   标签 / 徽章 — tint 外观
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sp-s);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-red { background: var(--danger-bg); color: var(--danger); }
+.badge-yellow { background: var(--warning-bg); color: var(--warning); }
+.badge-green { background: var(--success-bg); color: var(--success); }
+
+/* ============================================================
+   输入框 — Fluent 下强调线
+   ============================================================ */
+.input {
+  height: 32px;
+  padding: 0 var(--sp-m);
+  border: 1px solid var(--stroke-control);
+  border-bottom-color: var(--fg-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--fg-1);
+  font-family: var(--font-base);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--dur-normal) var(--ease-fluent);
+}
+.input::placeholder { color: var(--fg-4); }
+.input:hover { border-color: var(--fg-4); }
+.input:focus {
+  border-color: var(--stroke-control);
+  border-bottom: 2px solid var(--brand-fg);
+}
+
+/* ============================================================
+   表格
+   ============================================================ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  padding: var(--sp-s) var(--sp-m);
+  text-align: left;
+  font-weight: 600;
+  color: var(--fg-3);
+  border-bottom: 1px solid var(--divider);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: var(--sp-s) var(--sp-m);
+  border-bottom: 1px solid var(--stroke-divider);
+  white-space: nowrap;
+}
+.data-table tr:hover td {
+  background: var(--brand-subtle);
+}
+
+/* ============================================================
+   过渡动画
+   ============================================================ */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--dur-slow) var(--ease-fluent);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
