@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavDetectMsgMapper">
+    <!-- 按站ID和时间查询分页数据 -->
+    <select id="selectByPage" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        SELECT *
+        FROM uav_detect_msg
+        WHERE station_id = #{stationId}
+          AND data_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY data_time DESC
+            LIMIT #{offset}, #{pageSize}
+    </select>
+    <select id="getUavDetectMsgByStationId" resultType="org.jeecg.modules.uav.vo.UavDetectMsgVo">
+        SELECT
+        t1.model,
+        t1.serial,
+        t1.station_id,
+        t1.data_time,
+        IFNULL(config.name, '') AS station_name,
+        IFNULL(t2.brand, '未知') AS brand,
+        IFNULL(t2.`status`, 3) AS status,
+        IFNULL(t2.auth_status, 3) AS auth_status
+        FROM (
+        -- 窗口函数仅扫描索引，无需全表+排序
+        SELECT
+        REPLACE(model, ' ', '') AS model,
+        serial,
+        station_id,
+        data_time,
+        ROW_NUMBER() OVER (PARTITION BY serial ORDER BY data_time DESC) AS rn
+        FROM uav_detect_msg
+        <where>
+            -- 1. 优化StationId条件：简化嵌套IF，逻辑更清晰
+            <if test='StationId != null and StationId != ""'>
+                station_id = #{StationId}
+            </if>
+            -- 2. 优化日期条件：用范围查询替代函数，触发索引
+            <if test='rq != null and rq != ""'>
+                <if test='StationId != null and StationId != ""'>AND</if>
+                data_time &gt;= CONCAT(#{rq},' 00:00:00')
+                AND data_time &lt;= CONCAT(#{rq},' 23:59:59')
+            </if>
+        </where>
+        ) t1
+        LEFT JOIN wjbd_wrj_jbxx t2 ON t1.serial = t2.serial_number
+        LEFT JOIN uav_device_config config ON t1.station_id = config.station_id
+        WHERE t1.rn = 1
+        <if test='authStatus != null and authStatus != ""'>
+           and   t2.auth_status = #{authStatus}
+        </if>
+        ORDER BY t1.data_time DESC
+    </select>
+    <select id="getUavDetectMsgByModelSerialRq" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        select * from uav_detect_msg
+        <where>
+
+<!--            <if test='model!= null and  model!=""'>-->
+<!--                REPLACE(model,' ','') = REPLACE(#{model},' ','') and (dron_lng is not null and dron_lng!=0)-->
+<!--            </if>-->
+            <if test='model!= null and  model!=""'>
+                serial = #{serial}  and (dron_lng is not null and dron_lng!=0)
+            </if>
+            <if test='rq!= null and  rq!=""'>
+                and DATE_FORMAT(data_time, '%Y-%m-%d') = #{rq}
+            </if>
+        </where>
+        ORDER BY data_time asc
+    </select>
+    <select id="getUavDetectMsgByModelSerialRqlimit1" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        select *,IF(sd&gt;30,'red',IF(sd&gt;10 and sd&lt;=30,'yellow','green')) as wxdj
+        from uav_detect_msg
+        <where>
+<!--            <if test='model!= null and  model!=""'>-->
+<!--                REPLACE(model,' ','') = REPLACE(#{model},' ','')  and (dron_lng is not null and dron_lng!=0)-->
+<!--            </if>-->
+            <if test='model!= null and  model!=""'>
+                  serial = #{serial} and (dron_lng is not null and dron_lng!=0)
+            </if>
+            <if test='rq!= null and  rq!=""'>
+                and DATE_FORMAT(data_time, '%Y-%m-%d') = #{rq}
+            </if>
+        </where>
+        ORDER BY data_time desc limit 1
+    </select>
+    <select id="batchGetUavDetectMsgByModelSerialRq" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        SELECT
+        t.*,
+        CASE
+        WHEN ROUND(
+        -- 速度权重0.4（sd为m/s，无需转换）
+        0.4 * IF(sd IS NULL, 0,
+        1 - EXP(-0.005 * (LEAST(GREATEST(sd, 0), 150)))
+        ) +
+        -- 距离权重0.3（distance从km转米后计算）
+        0.3 *IF(distance IS NULL, 1,
+        1 / (1 + EXP(0.02 * (LEAST(GREATEST(distance , -100), 1000) - 30)))
+
+        ) +
+        -- 高度权重0.3（height/altitude为米）
+        0.3 * IF(IFNULL(height, altitude) IS NULL, 1,
+        1 / (1 + EXP(2 * POWER(10, -8) * POWER(LEAST(GREATEST(IFNULL(height, altitude), 0), 10000) - 1000, 2)))
+        ),
+        4
+        ) &gt;= 0.7 THEN 'red'
+        WHEN ROUND(
+        -- 速度权重0.4（sd为m/s，无需转换）
+        0.4 * IF(sd IS NULL, 0,
+        1 - EXP(-0.005 * (LEAST(GREATEST(sd, 0), 150)))
+        ) +
+        -- 距离权重0.3（distance从km转米后计算）
+        0.3 *IF(distance IS NULL, 1,
+        1 / (1 + EXP(0.02 * (LEAST(GREATEST(distance , -100), 1000) - 30)))
+
+        ) +
+        -- 高度权重0.3（height/altitude为米）
+        0.3 * IF(IFNULL(height, altitude) IS NULL, 1,
+        1 / (1 + EXP(2 * POWER(10, -8) * POWER(LEAST(GREATEST(IFNULL(height, altitude), 0), 10000) - 1000, 2)))
+        ),
+        4
+        ) &gt;= 0.4 THEN 'yellow'
+        ELSE 'green'
+        END AS wxdj
+        FROM (
+        SELECT
+        -- 替换子查询+GROUP BY为窗口函数，一次扫描完成
+        u.*,
+        ROW_NUMBER() OVER (PARTITION BY model_clean, serial_clean ORDER BY data_time DESC) AS rn
+        FROM uav_detect_msg u
+        WHERE
+        dron_lng IS NOT NULL
+        AND dron_lng != 0
+        <if test="rq != null and rq != ''">
+            AND data_time &gt;= CONCAT(#{rq},' 00:00:00')
+            AND data_time &lt;= CONCAT(#{rq},' 23:59:59')
+        </if>
+        AND (model_clean, serial_clean) IN (
+        <foreach collection="modelSerialList" item="item" separator=",">
+            (#{item.modelClean}, #{item.serialClean})
+        </foreach>
+        )
+        ) t
+        WHERE t.rn = 1  -- 仅保留每个(model_clean+serial_clean)的最新记录
+        ORDER BY t.data_time DESC
+    </select>
+    <select id="getUavUavDfDataModelSerialRqlimit1" resultType="org.jeecg.modules.uav.entity.UavDfData">
+        select *,
+        IF(speed&gt;30,'red',IF(speed&gt;10 and speed&lt;=30,'yellow','green')) as wxdj from uav_df_data
+        <where>
+<!--            <if test='model!= null and  model!=""'>-->
+<!--                REPLACE(uav_model,' ','') = REPLACE(#{model},' ','')  and (longitude is not null and latitude!=0)-->
+<!--            </if>-->
+            <if test='model!= null and  model!=""'>
+                 ( uav_id = #{serial}   or REPLACE(uav_id,'RID-','') = #{serial} ) and (longitude is not null and latitude!=0)
+            </if>
+            <if test='rq!= null and  rq!=""'>
+                and DATE_FORMAT(data_time, '%Y-%m-%d') = #{rq}
+            </if>
+        </where>
+        ORDER BY data_time desc limit 1
+    </select>
+    <select id="getUavDetectMsgByJwdJl" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        SELECT
+            *
+        FROM
+            (
+                SELECT
+                    *,
+                    ROUND(
+                                6378.138 * 2 * ASIN(
+                                    SQRT(
+                                                POW( SIN( ( #{wd} * PI( ) / 180- dron_lat * PI( ) / 180 ) / 2 ), 2 ) + COS( #{wd} * PI( ) / 180 ) * COS( dron_lat * PI(
+                                                ) / 180 ) * POW( SIN( ( #{jd} * PI( ) / 180- dron_lng * PI( ) / 180 ) / 2 ), 2 )
+                                        )
+                                )
+                        ,2) AS jl
+                FROM
+                    (select * from uav_detect_msg where serial in( select serial_number from wjbd_wrj_jbxx where auth_status=2 )
+                        union
+                     select * from uav_detect_msg where serial not in( select serial_number from wjbd_wrj_jbxx  )
+                        ) cc where DATE_FORMAT(data_time, '%Y-%m-%d')=DATE_FORMAT(NOW(), '%Y-%m-%d')
+                HAVING
+                    (#{jl}/1000) >= jl ) a  ORDER BY data_time desc limit 1
+    </select>
+    <select id="wrjfxcstj" resultType="java.util.Map">
+        SELECT
+        <if test='type=="型号" '>
+            cache.model AS model,
+        </if>
+        <if test='type=="序列号" '>
+            cache.serial AS serial,
+        </if>
+        COUNT(DISTINCT cache.alarm_group_id) AS num
+        FROM uav_alarm_group_cache cache
+        <where>
+            -- 直接过滤中间表的日期，无需计算窗口函数
+            <if test='nf!= null and nf!="" and yf!= null and yf!=""'>
+                cache.data_time &gt;= STR_TO_DATE(CONCAT(#{nf}, '-', #{yf}, '-01'), '%Y-%m-%d')
+                AND cache.data_time &lt; DATE_ADD(STR_TO_DATE(CONCAT(#{nf}, '-', #{yf}, '-01'), '%Y-%m-%d'), INTERVAL 1 MONTH)
+            </if>
+            <if test='nf!= null and nf!="" and (yf== null or yf=="")'>
+                cache.data_time &gt;= STR_TO_DATE(CONCAT(#{nf}, '-01-01'), '%Y-%m-%d')
+                AND cache.data_time &lt; STR_TO_DATE(CONCAT(CAST(#{nf} AS SIGNED) + 1, '-01-01'), '%Y-%m-%d')
+            </if>
+            <if test='type=="型号" '>
+                AND cache.model IS NOT NULL AND cache.model != ''
+            </if>
+            <if test='type=="序列号" '>
+                AND cache.serial IS NOT NULL AND cache.serial != ''
+            </if>
+        </where>
+        <if test='type=="型号" '>
+            GROUP BY cache.model
+        </if>
+        <if test='type=="序列号" '>
+            GROUP BY cache.serial
+        </if>
+        ORDER BY num DESC
+        LIMIT 1000
+    </select>
+    <select id="pageList" resultType="org.jeecg.modules.uav.entity.UavDetectMsg">
+        SELECT t1.*
+        from wjbd_wrj_jbxx t2  right join  uav_detect_msg t1 on t1.serial = t2.serial_number and t1.model = t2.model
+        <where>
+
+            <if test='nf!= null and  nf!=""'>
+                and year(t1.data_time) = #{nf}
+            </if>
+            <if test='yf!= null and  yf!=""'>
+                and MONTH(t1.data_time) = #{yf}
+            </if>
+            <if test='type== "品牌"'>
+                and ifnull(t2.brand,'未知')  = #{brand}
+            </if>
+            <if test='type== "型号"'>
+                and t1.model = #{model}
+            </if>
+            <if test='type== "序列号"'>
+                and t1.serial = #{serial}
+            </if>
+        </where>
+        ORDER BY data_time desc
+    </select>
+    <select id="getUavDetectMsgDateByNfYf" resultType="org.jeecg.modules.uav.vo.UavDetectMsgDateVo">
+
+        select DATE (data_time) as rq, '无人机飞行' as type
+        from uav_detect_msg
+        <where>
+            <if test='nf!= null and  nf!=""'>
+                year(data_time) = #{nf}
+            </if>
+            <if test='yf!= null and  yf!=""'>
+                and MONTH(data_time) = #{yf}
+            </if>
+        </where>
+        GROUP BY DATE (data_time)
+        ORDER BY data_time desc
+    </select>
+</mapper>
+    

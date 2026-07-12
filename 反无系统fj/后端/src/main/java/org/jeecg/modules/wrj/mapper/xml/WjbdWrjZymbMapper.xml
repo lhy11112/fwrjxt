@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.wrj.mapper.WjbdWrjZymbMapper">
+
+    <select id="getWrjZymbByJwdAndJl" resultType="org.jeecg.modules.wrj.entity.WjbdWrjZymb">
+        SELECT
+        *
+        FROM
+        (
+        SELECT
+        *,
+        ROUND(
+        6378.138 * 2 * ASIN(
+        SQRT(
+        POW( SIN( ( #{wd} * PI( ) / 180- wd * PI( ) / 180 ) / 2 ), 2 ) + COS( #{wd} * PI( ) / 180 ) * COS( WD * PI(
+        ) / 180 ) * POW( SIN( ( #{jd} * PI( ) / 180- jd * PI( ) / 180 ) / 2 ), 2 )
+        )
+        )
+        ) AS jl
+        FROM
+        wjbd_wrj_zymb
+        <where>
+            TYPE in
+            <foreach item="key" collection="typeList" open="(" separator="," close=")">
+                #{key}
+            </foreach>
+        </where>
+        HAVING
+        #{jl} > jl ) a
+
+    </select>
+    <select id="getWrjZymbByJwdAndJlGroupBySubType" resultType="org.jeecg.modules.wrj.entity.vo.WjbdWrjZymbVo">
+        SELECT
+        SUBTYPE as type,
+        COUNT(*) as sl
+        FROM
+        (
+        SELECT
+        *,
+        ROUND(
+        6378.138 * 2 * ASIN(
+        SQRT(
+        POW( SIN( ( #{wd} * PI( ) / 180- wd * PI( ) / 180 ) / 2 ), 2 ) + COS( #{wd} * PI( ) / 180 ) * COS( WD * PI(
+        ) / 180 ) * POW( SIN( ( #{jd} * PI( ) / 180- jd * PI( ) / 180 ) / 2 ), 2 )
+        )
+        )
+        ) AS jl
+        FROM
+        wjbd_wrj_zymb
+        <where>
+            TYPE in
+            <foreach item="key" collection="typeList" open="(" separator="," close=")">
+                #{key}
+            </foreach>
+
+        </where>
+        HAVING
+        #{jl} > jl ) a  GROUP BY   SUBTYPE
+
+    </select>
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.wrj.mapper.WjbdWrjKyMapper">
+    <resultMap id="DatabaseTable" type="org.jeecg.modules.wrj.entity.WjbdWrjKy">
+        <id column="id"     property="id"></id>
+        <id column="mc"     property="mc"></id>
+        <id column="lx"     property="lx"></id>
+        <id column="xz"     property="xz"></id>
+        <id column="zxdjd"   property="zxdjd"></id>
+        <id column="zxdwd"     property="zxdwd"></id>
+        <id column="bj"   property="bj"></id>
+        <id column="zxgd"   property="zxgd"></id>
+        <id column="zdgd"    property="zdgd"></id>
+        <id column="ddzbjh"    property="ddzbjh"></id>
+        <id column="cd"    property="cd"></id>
+        <id column="kd"    property="kd"></id>
+        <id column="kssj"    property="kssj"></id>
+        <id column="jssj"    property="jssj"></id>
+        <id column="sfqy"    property="sfqy"></id>
+        <id column="bz"    property="bz"></id>
+        <id column="ys"    property="ys"></id>
+    </resultMap>
+    <resultMap id="wrjKySqList" extends="DatabaseTable" type="org.jeecg.modules.wrj.entity.WjbdWrjKy">
+        <collection property="wjbdWrjKysqVoList" column="id" select="wjbdWrjKysqVoList"></collection>
+    </resultMap>
+    <select id="listAll" resultMap="wrjKySqList">
+        select *
+        from wjbd_wrj_ky
+<where>
+    <if test="wjbdWrjKy.mc!=null and wjbdWrjKy.mc!=''">
+        mc like concat('%',#{wjbdWrjKy.mc},'%')
+    </if>
+</where>
+        ORDER BY czsj desc
+    </select>
+    <select id="wjbdWrjKysqVoList" resultType="org.jeecg.modules.wrj.vo.WjbdWrjKysqVo">
+        SELECT
+            t1.id zjbid, t1.kyid,t1.wrjid,t2.*
+        FROM
+            wjbd_wrj_kysq t1
+                LEFT JOIN wjbd_wrj_jbxx t2 ON t1.wrjid = t2.id
+        WHERE
+            t1.kyid = #{id}
+    </select>
+    <select id="listAllByKyid" resultType="org.jeecg.modules.wrj.vo.WjbdWrjKysqVo">
+        SELECT
+            t1.id zjbid,t1.kyid,t1.wrjid,t2.*
+        FROM
+            wjbd_wrj_kysq t1
+                LEFT JOIN wjbd_wrj_jbxx t2 ON t1.wrjid = t2.id
+        WHERE
+            t1.kyid = #{kyid}
+    </select>
+</mapper>

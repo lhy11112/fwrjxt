@@ -1,0 +1,116 @@
+/* 弹框 */
+.custom-dialog-dark.el-dialog {
+    /* 暗色模式的样式 */
+    background-color: #fff !important;
+    border-radius: 10px !important;
+    
+}
+
+.custom-dialog-dark.el-dialog .el-dialog__header {
+    background: url(@/assets/images/dialog/backHead.png) no-repeat !important;
+    background-size: 100% 100% !important;
+    color: #000 !important;
+    border-bottom: 1px solid rgba(238, 242, 250);
+    height: 58px !important;
+}
+
+.custom-dialog-dark.el-dialog .el-dialog__header .el-dialog__title {
+    color: #000 !important;
+    margin-left: 35px !important;
+}
+
+/* 表格 */
+.whiteTheme.el-table thead {
+    font-weight: bolder !important;
+    text-align: center !important;
+    background-color: #f1f8ff !important;
+}
+
+.whiteTheme.el-table td.el-table__cell,
+.whiteTheme.el-table th.el-table__cell.is-leaf {
+    border-color: #ebeef5 !important;
+}
+
+.whiteTheme.el-table tbody tr {
+    color: #000 !important;
+}
+
+.whiteTheme.el-table thead .el-table__cell {
+    background-color: #f1f8ff !important;
+    color: #333 !important;
+}
+
+.whiteTheme.el-table .el-table__body td.el-table__cell {
+    color: #000 !important;
+}
+
+/* 修改鼠标移入的效果 */
+.whiteTheme.el-table .el-table__body tr.hover-row>td.el-table__cell {
+    background-color: #eee !important;
+}
+
+.whiteTheme.el-table .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+    background-color: #eee !important;
+}
+
+.whiteTheme.el-table .el-table__empty-text {
+    color: #333 !important;
+}
+
+.whiteTheme.el-table thead .cell {
+    padding: 5px 10px !important;
+    font-weight: bolder !important;
+    font-size: 15px !important;
+}
+
+.whiteTheme.el-table .el-table__cell {
+    padding: 5px !important;
+    font-size: 14px !important;
+}
+
+/* 表单 */
+/* 下拉 */
+.el-select.analysis-page .el-select__wrapper {
+    background-image: none !important;
+    box-shadow: 0px 0px 0px 1px #ccc inset !important;
+}
+.el-select.analysis-page .el-select__placeholder{
+    color: #606266 !important;
+}
+
+/* 输入框 */
+.el-input.analysis-page .el-input__wrapper {
+    background-image: none !important;
+    box-shadow: 0px 0px 0px 1px #ccc inset !important;
+}
+
+.el-input.analysis-page .el-input__inner {
+    color: #606266 !important;
+}
+
+/*文本框 */
+.el-textarea.analysis-page .el-textarea__inner {
+    background-image: none !important;
+    box-shadow: 0px 0px 0px 1px #ccc inset !important;
+}
+
+.el-form.analysis-page .el-form-item__label {
+    color: #606266 !important;
+}
+
+
+
+
+.el-dialog{
+    padding: 0px !important;
+  }
+.el-dialog__header {
+    display: flex;
+    align-items: center;
+    padding:0;
+  }
+.el-dialog__body{
+    padding: 10px 20px !important;
+    box-sizing: border-box;
+  }
+  

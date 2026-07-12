@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>频谱图</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        canvas {
+            border: 1px solid #333;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            font-size: 18px;
+            margin: 10px;
+        }
+        #spectrogram {
+            width: 800px;
+            height: 300px;
+        }
+    </style>
+    <!-- 引入 ECharts -->
+    <script src="./lib/echarts.min.js"></script>
+</head>
+<body>
+    <h1>频谱图</h1>
+    <div id="spectrogram"></div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+
+        // 初始化 ECharts 实例
+        const chart = echarts.init(document.getElementById('spectrogram'), {
+            color: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
+        });
+
+        // 配置图表选项
+        chart.setOption({
+            title: {
+                text: '频谱图'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            xAxis: {
+                type: 'value',
+                name: '频率 (Hz)',
+                // min: 0,
+                // max: 20000,
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                },
+                gridLine: {
+                    lineStyle: {
+                        color: '#333'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '幅度',
+                // min: 0,
+                // max: 1,
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                },
+                gridLine: {
+                    lineStyle: {
+                        color: '#333'
+                    }
+                }
+            },
+            series: [{
+                type: 'bar',
+                data: [],
+                itemStyle: {
+                    color: function(params) {
+                        return 'rgb(' + Math.floor(Math.random() * 255) + ',' + Math.floor(Math.random() * 255) + ',' + Math.floor(Math.random() * 255) + ')';
+                    }
+                }
+            }]
+        });
+
+        // 模拟音频数据
+        const frequencyData = new Array(100).fill(0);
+
+        // 更新频谱图
+        function updateSpectrogram() {
+            // 模拟音频数据（这里用正弦波模拟）
+            const time = Date.now() * 0.001;
+            console.log(time);
+            // 生成模拟的频域数据
+            for (let i = 0; i < 100; i++) {
+                const frequency = i * 200;
+                frequencyData[i] = Math.abs(Math.sin(time * frequency)) * 5000;
+            }
+            console.log(frequencyData);
+            // 更新 ECharts 数据
+            chart.setOption({
+                series: [{
+                    data: frequencyData
+                }]
+            });
+        }
+        updateSpectrogram()
+        // 开始更新频谱图
+        // setInterval(updateSpectrogram, 1000 *3);
+
+    </script>
+</body>
+</html>

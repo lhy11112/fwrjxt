@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地Cesium空域管理系统</title>
+    <!-- 引入本地Cesium库 -->
+    <script src="./lib/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="./lib/Cesium/Widgets/widgets.css" />
+    <!-- 基础样式 -->
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .panel {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            z-index: 10;
+        }
+        .toolbar {
+            top: 15px;
+            left: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .properties-panel {
+            top: 15px;
+            right: 15px;
+            width: 300px;
+            max-height: calc(100% - 30px);
+            overflow-y: auto;
+        }
+        .drawing-hint {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .shape-btn {
+            justify-content: center;
+            padding: 10px;
+        }
+        .shape-active {
+            background: #28a745;
+        }
+        .shape-inactive {
+            background: #6c757d;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .slider-group {
+            margin-bottom: 20px;
+        }
+        .slider {
+            width: 100%;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        .notification {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1000;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        .success {
+            background: #28a745;
+        }
+        .error {
+            background: #dc3545;
+        }
+        @keyframes fadein {
+            from {top: 0; opacity: 0;}
+            to {top: 20px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {top: 20px; opacity: 1;}
+            to {top: 0; opacity: 0;}
+        }
+        .map-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        .map-control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            border: none;
+        }
+        .vertex-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    
+    <!-- 工具栏 -->
+    <div class="panel toolbar">
+        <button id="add-btn" class="btn">
+            <i class="fa fa-plus"></i> 添加空域
+        </button>
+        <div>
+            <button id="circle-btn" class="btn shape-btn shape-active">
+                <i class="fa fa-circle-o"></i> 圆形
+            </button>
+            <button id="rectangle-btn" class="btn shape-btn shape-inactive">
+                <i class="fa fa-square-o"></i> 矩形
+            </button>
+            <button id="polygon-btn" class="btn shape-btn shape-inactive">
+                <i class="fa fa-star-o"></i> 多边形
+            </button>
+        </div>
+        <button id="imagery-btn" class="btn">
+            <i class="fa fa-map"></i> 切换底图
+        </button>
+        <button id="save-btn" class="btn">
+            <i class="fa fa-save"></i> 保存配置
+        </button>
+        <button id="clear-btn" class="btn">
+            <i class="fa fa-trash"></i> 清除所有
+        </button>
+    </div>
+    
+    <!-- 属性面板 -->
+    <div class="panel properties-panel" id="no-selection">
+        <h3>未选择空域</h3>
+        <p>在地图上点击选择一个空域以查看和编辑其属性</p>
+    </div>
+    
+    <div class="panel properties-panel hidden" id="circle-properties">
+        <h3>圆形空域属性</h3>
+        <div class="form-group">
+            <label for="circle-name">名称</label>
+            <input type="text" id="circle-name">
+        </div>
+        <div class="form-group">
+            <label for="circle-lon">经度</label>
+            <input type="number" id="circle-lon" step="0.0001">
+        </div>
+        <div class="form-group">
+            <label for="circle-lat">纬度</label>
+            <input type="number" id="circle-lat" step="0.0001">
+        </div>
+        <div class="slider-group">
+            <label for="circle-radius">半径 (米): <span id="circle-radius-value">500</span></label>
+            <input type="range" id="circle-radius-slider" min="100" max="5000" step="10" value="500">
+            <input type="number" id="circle-radius" min="100" max="5000" step="10" value="500">
+        </div>
+        <div class="form-group">
+            <label for="circle-min-height">最小高度 (米)</label>
+            <input type="number" id="circle-min-height" min="0" step="100" value="0">
+        </div>
+        <div class="form-group">
+            <label for="circle-max-height">最大高度 (米)</label>
+            <input type="number" id="circle-max-height" min="0" step="100" value="1000">
+        </div>
+        <div class="form-group">
+            <label for="circle-type">空域类型</label>
+            <select id="circle-type">
+                <option value="restricted">限制区</option>
+                <option value="prohibited">禁飞区</option>
+                <option value="danger">危险区</option>
+                <option value="training">训练区</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="circle-color">颜色</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="color" id="circle-color" value="#ff0000">
+                <input type="text" id="circle-color-text" value="#ff0000" style="flex: 1;">
+            </div>
+        </div>
+        <div id="action-buttons" class="action-buttons">
+            <button id="apply-btn" class="btn">
+                <i class="fa fa-check"></i> 应用
+            </button>
+            <button id="cancel-btn" class="btn" style="background: #6c757d;">
+                <i class="fa fa-times"></i> 取消
+            </button>
+            <button id="copy-btn" class="btn" style="background: #17a2b8;">
+                <i class="fa fa-copy"></i> 复制
+            </button>
+            <button id="delete-btn" class="btn" style="background: #dc3545;">
+                <i class="fa fa-trash"></i> 删除
+            </button>
+        </div>
+    </div>
+    
+    <div class="panel properties-panel hidden" id="rectangle-properties">
+        <h3>矩形空域属性</h3>
+        <div class="form-group">
+            <label for="rectangle-name">名称</label>
+            <input type="text" id="rectangle-name">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-lon">中心经度</label>
+            <input type="number" id="rectangle-lon" step="0.0001">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-lat">中心纬度</label>
+            <input type="number" id="rectangle-lat" step="0.0001">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-width">宽度 (米)</label>
+            <input type="number" id="rectangle-width" min="100" max="10000" step="10" value="1000">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-length">长度 (米)</label>
+            <input type="number" id="rectangle-length" min="100" max="10000" step="10" value="1000">
+        </div>
+        <div class="slider-group">
+            <label for="rectangle-rotation">旋转角度: <span id="rectangle-rotation-value">0</span>°</label>
+            <input type="range" id="rectangle-rotation-slider" min="0" max="360" step="1" value="0">
+            <input type="number" id="rectangle-rotation" min="0" max="360" step="1" value="0">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-min-height">最小高度 (米)</label>
+            <input type="number" id="rectangle-min-height" min="0" step="100" value="0">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-max-height">最大高度 (米)</label>
+            <input type="number" id="rectangle-max-height" min="0" step="100" value="1000">
+        </div>
+        <div class="form-group">
+            <label for="rectangle-type">空域类型</label>
+            <select id="rectangle-type">
+                <option value="restricted">限制区</option>
+                <option value="prohibited">禁飞区</option>
+                <option value="danger">危险区</option>
+                <option value="training">训练区</option>
+            </select>
+        </div>
+        <div id="action-buttons" class="action-buttons">
+            <button id="apply-btn" class="btn">
+                <i class="fa fa-check"></i> 应用
+            </button>
+            <button id="cancel-btn" class="btn" style="background: #6c757d;">
+                <i class="fa fa-times"></i> 取消
+            </button>
+            <button id="copy-btn" class="btn" style="background: #17a2b8;">
+                <i class="fa fa-copy"></i> 复制
+            </button>
+            <button id="delete-btn" class="btn" style="background: #dc3545;">
+                <i class="fa fa-trash"></i> 删除
+            </button>
+        </div>
+    </div>
+    
+    <div class="panel properties-panel hidden" id="polygon-properties">
+        <h3>多边形空域属性</h3>
+        <div class="form-group">
+            <label for="polygon-name">名称</label>
+            <input type="text" id="polygon-name">
+        </div>
+        <div class="form-group">
+            <label>顶点坐标</label>
+            <div id="polygon-vertices">
+                <div class="p-2 bg-gray-50 rounded border border-gray-200">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>顶点 1</span>
+                        <button class="text-danger hover:text-danger/80"><i class="fa fa-times"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="116.3974" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                        <input type="number" value="39.9088" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                    </div>
+                </div>
+                <div class="p-2 bg-gray-50 rounded border border-gray-200 mt-2">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>顶点 2</span>
+                        <button class="text-danger hover:text-danger/80"><i class="fa fa-times"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="116.4174" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                        <input type="number" value="39.9088" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                    </div>
+                </div>
+                <div class="p-2 bg-gray-50 rounded border border-gray-200 mt-2">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>顶点 3</span>
+                        <button class="text-danger hover:text-danger/80"><i class="fa fa-times"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="116.4074" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                        <input type="number" value="39.9288" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                    </div>
+                </div>
+            </div>
+            <button id="add-vertex" class="btn mt-2" style="width: 100%; background: #6c757d;">
+                <i class="fa fa-plus"></i> 添加顶点
+            </button>
+        </div>
+        <div class="form-group">
+            <label for="polygon-min-height">最小高度 (米)</label>
+            <input type="number" id="polygon-min-height" min="0" step="100" value="0">
+        </div>
+        <div class="form-group">
+            <label for="polygon-max-height">最大高度 (米)</label>
+            <input type="number" id="polygon-max-height" min="0" step="100" value="1000">
+        </div>
+        <div class="form-group">
+            <label for="polygon-type">空域类型</label>
+            <select id="polygon-type">
+                <option value="restricted">限制区</option>
+                <option value="prohibited">禁飞区</option>
+                <option value="danger">危险区</option>
+                <option value="training">训练区</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="polygon-color">颜色</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="color" id="polygon-color" value="#00ff00">
+                <input type="text" id="polygon-color-text" value="#00ff00" style="flex: 1;">
+            </div>
+        </div>
+        <div id="action-buttons" class="action-buttons">
+            <button id="apply-btn" class="btn">
+                <i class="fa fa-check"></i> 应用
+            </button>
+            <button id="cancel-btn" class="btn" style="background: #6c757d;">
+                <i class="fa fa-times"></i> 取消
+            </button>
+            <button id="copy-btn" class="btn" style="background: #17a2b8;">
+                <i class="fa fa-copy"></i> 复制
+            </button>
+            <button id="delete-btn" class="btn" style="background: #dc3545;">
+                <i class="fa fa-trash"></i> 删除
+            </button>
+        </div>
+    </div>
+    
+    <!-- 选择信息 -->
+    <div class="panel" id="selection-info" style="top: 15px; left: 100px; display: none;">
+        <h4 id="selected-name"></h4>
+        <p id="selected-desc" style="margin: 5px 0 0 0; font-size: 14px;"></p>
+    </div>
+    
+    <!-- 绘制提示 -->
+    <div class="drawing-hint hidden" id="drawing-hint">
+        <span id="hint-text">点击地图添加圆形空域</span>
+    </div>
+    
+    <!-- 地图控制按钮 -->
+    <div class="map-controls">
+        <button class="map-control-btn" id="zoom-in" title="放大">
+            <i class="fa fa-plus"></i>
+        </button>
+        <button class="map-control-btn" id="zoom-out" title="缩小">
+            <i class="fa fa-minus"></i>
+        </button>
+        <button class="map-control-btn" id="reset-view" title="重置视图">
+            <i class="fa fa-home"></i>
+        </button>
+        <button class="map-control-btn" id="fullscreen" title="全屏">
+            <i class="fa fa-expand"></i>
+        </button>
+    </div>
+    
+    <!-- 加载指示器 -->
+    <div class="loading-indicator" id="loading-indicator">
+        加载中...
+    </div>
+
+    <script>
+        // 全局变量
+        let viewer;
+        let entities = [];
+        let currentEntity = null;
+        let drawingMode = false;
+        let activeShapeType = 'circle';
+        let imageryLayers;
+        let currentImageryIndex = 0;
+        
+        // 创建空域
+        function createAirspace(type, lon, lat) {
+            // 生成唯一ID和默认名称
+            const id = 'airspace-' + Date.now();
+            const name = `${type === 'circle' ? '圆形' : type === 'rectangle' ? '矩形' : '多边形'}空域-${entities.length + 1}`;
+            
+            // 默认属性
+            const defaultProps = {
+                lon: lon,
+                lat: lat,
+                minHeight: 0,
+                maxHeight: 1000,
+                type: 'restricted',
+                color: type === 'circle' ? '#ff0000' : type === 'rectangle' ? '#0000ff' : '#00ff00'
+            };
+            
+            let entity;
+            
+            if (type === 'circle') {
+                // 添加圆形空域特有属性
+                const circleProps = {
+                    ...defaultProps,
+                    radius: 500
+                };
+                
+                entity = viewer.entities.add({
+                    id: id,
+                    name: name,
+                    type: 'circle',
+                    position: Cesium.Cartesian3.fromDegrees(lon, lat),
+                    ellipse: {
+                        semiMinorAxis: circleProps.radius,
+                        semiMajorAxis: circleProps.radius,
+                        height: circleProps.minHeight,
+                        extrudedHeight: circleProps.maxHeight,
+                        material: Cesium.Color.fromCssColorString(circleProps.color).withAlpha(0.3),
+                        outline: true,
+                        outlineWidth: 2,
+                        outlineColor: Cesium.Color.fromCssColorString(circleProps.color)
+                    },
+                    properties: circleProps
+                });
+            } else if (type === 'rectangle') {
+                // 添加矩形空域特有属性
+                const rectProps = {
+                    ...defaultProps,
+                    width: 1000,
+                    length: 1000,
+                    rotation: 0
+                };
+                
+                // 简化的经纬度转换
+                const lonPerMeter = 1 / 111319.9;
+                const latPerMeter = 1 / 111319.9;
+                
+                const halfWidth = rectProps.width * lonPerMeter / 2;
+                const halfLength = rectProps.length * latPerMeter / 2;
+                
+                entity = viewer.entities.add({
+                    id: id,
+                    name: name,
+                    type: 'rectangle',
+                    rectangle: {
+                        coordinates: Cesium.Rectangle.fromDegrees(
+                            lon - halfWidth, lat - halfLength,
+                            lon + halfWidth, lat + halfLength
+                        ),
+                        rotation: Cesium.Math.toRadians(rectProps.rotation),
+                        height: rectProps.minHeight,
+                        extrudedHeight: rectProps.maxHeight,
+                        material: Cesium.Color.fromCssColorString(rectProps.color).withAlpha(0.3),
+                        outline: true,
+                        outlineWidth: 2,
+                        outlineColor: Cesium.Color.fromCssColorString(rectProps.color)
+                    },
+                    properties: rectProps
+                });
+            } else if (type === 'polygon') {
+                // 创建多边形空域
+                const polyProps = {
+                    ...defaultProps,
+                    vertices: [
+                        {lon: lon, lat: lat},
+                        {lon: lon + 0.01, lat: lat},
+                        {lon: lon + 0.005, lat: lat + 0.01}
+                    ]
+                };
+                
+                // 转换顶点为Cartesian3数组
+                const positions = polyProps.vertices.map(vertex => 
+                    Cesium.Cartesian3.fromDegrees(vertex.lon, vertex.lat)
+                );
+                
+                entity = viewer.entities.add({
+                    id: id,
+                    name: name,
+                    type: 'polygon',
+                    polygon: {
+                        hierarchy: new Cesium.PolygonHierarchy(positions),
+                        height: polyProps.minHeight,
+                        extrudedHeight: polyProps.maxHeight,
+                        material: Cesium.Color.fromCssColorString(polyProps.color).withAlpha(0.3),
+                        outline: true,
+                        outlineWidth: 2,
+                        outlineColor: Cesium.Color.fromCssColorString(polyProps.color)
+                    },
+                    properties: polyProps
+                });
+            }
+            
+            // 添加到实体数组
+            entities.push(entity);
+            
+            // 选中新创建的空域
+            selectAirspace(entity);
+            
+            return entity;
+        }
+        
+        // 选择空域
+        function selectAirspace(entity) {
+            // 取消之前选中实体的高亮
+            if (currentEntity) {
+                const color = Cesium.Color.fromCssColorString(currentEntity.properties.color._value);
+                if (currentEntity.ellipse) {
+                    currentEntity.ellipse.outlineWidth = 2;
+                    currentEntity.ellipse.outlineColor = color;
+                } else if (currentEntity.rectangle) {
+                    currentEntity.rectangle.outlineWidth = 2;
+                    currentEntity.rectangle.outlineColor = color;
+                } else if (currentEntity.polygon) {
+                    currentEntity.polygon.outlineWidth = 2;
+                    currentEntity.polygon.outlineColor = color;
+                }
+            }
+            
+            // 设置当前选中实体
+            currentEntity = entity;
+            
+            // 高亮选中的实体
+            const highlightColor = Cesium.Color.YELLOW;
+            if (entity.ellipse) {
+                entity.ellipse.outlineWidth = 3;
+                entity.ellipse.outlineColor = highlightColor;
+            } else if (entity.rectangle) {
+                entity.rectangle.outlineWidth = 3;
+                entity.rectangle.outlineColor = highlightColor;
+            } else if (entity.polygon) {
+                entity.polygon.outlineWidth = 3;
+                entity.polygon.outlineColor = highlightColor;
+            }
+            
+            // 隐藏未选择状态，显示属性面板
+            document.getElementById('no-selection').classList.add('hidden');
+            document.querySelectorAll('[id$="-properties"]').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            
+            // 显示对应类型的属性面板
+            document.getElementById(`${entity.type}-properties`).classList.remove('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+            document.getElementById('selection-info').classList.remove('hidden');
+            
+            // 更新属性面板
+            updatePropertiesPanel(entity);
+            
+            // 更新选中信息
+            document.getElementById('selected-name').textContent = entity.name;
+            if (entity.type === 'circle') {
+                document.getElementById('selected-desc').textContent = 
+                    `半径: ${entity.properties.radius._value}m | 高度: ${entity.properties.minHeight._value}-${entity.properties.maxHeight._value}m`;
+            } else if (entity.type === 'rectangle') {
+                document.getElementById('selected-desc').textContent = 
+                    `${entity.properties.width._value}×${entity.properties.length._value}m | 高度: ${entity.properties.minHeight._value}-${entity.properties.maxHeight._value}m`;
+            } else if (entity.type === 'polygon') {
+                document.getElementById('selected-desc').textContent = 
+                    `顶点: ${entity.properties.vertices._value.length}个 | 高度: ${entity.properties.minHeight._value}-${entity.properties.maxHeight._value}m`;
+            }
+        }
+        
+        // 取消选择空域
+        function deselectAirspace() {
+            if (currentEntity) {
+                // 恢复实体原始样式
+                const color = Cesium.Color.fromCssColorString(currentEntity.properties.color._value);
+                if (currentEntity.ellipse) {
+                    currentEntity.ellipse.outlineWidth = 2;
+                    currentEntity.ellipse.outlineColor = color;
+                } else if (currentEntity.rectangle) {
+                    currentEntity.rectangle.outlineWidth = 2;
+                    currentEntity.rectangle.outlineColor = color;
+                } else if (currentEntity.polygon) {
+                    currentEntity.polygon.outlineWidth = 2;
+                    currentEntity.polygon.outlineColor = color;
+                }
+                
+                currentEntity = null;
+            }
+            
+            // 显示未选择状态
+            document.getElementById('no-selection').classList.remove('hidden');
+            document.querySelectorAll('[id$="-properties"]').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('selection-info').classList.add('hidden');
+        }
+        
+        // 更新属性面板
+        function updatePropertiesPanel(entity) {
+            if (entity.type === 'circle') {
+                document.getElementById('circle-name').value = entity.name;
+                document.getElementById('circle-lon').value = entity.properties.lon._value.toFixed(4);
+                document.getElementById('circle-lat').value = entity.properties.lat._value.toFixed(4);
+                document.getElementById('circle-radius').value = entity.properties.radius._value;
+                document.getElementById('circle-radius-slider').value = entity.properties.radius._value;
+                document.getElementById('circle-radius-value').textContent = entity.properties.radius._value;
+                document.getElementById('circle-min-height').value = entity.properties.minHeight._value;
+                document.getElementById('circle-max-height').value = entity.properties.maxHeight._value;
+                document.getElementById('circle-type').value = entity.properties.type._value;
+                document.getElementById('circle-color').value = entity.properties.color._value;
+                document.getElementById('circle-color-text').value = entity.properties.color._value;
+            } else if (entity.type === 'rectangle') {
+                document.getElementById('rectangle-name').value = entity.name;
+                document.getElementById('rectangle-lon').value = entity.properties.lon._value.toFixed(4);
+                document.getElementById('rectangle-lat').value = entity.properties.lat._value.toFixed(4);
+                document.getElementById('rectangle-width').value = entity.properties.width._value;
+                document.getElementById('rectangle-length').value = entity.properties.length._value;
+                document.getElementById('rectangle-rotation').value = entity.properties.rotation._value;
+                document.getElementById('rectangle-rotation-slider').value = entity.properties.rotation._value;
+                document.getElementById('rectangle-rotation-value').textContent = entity.properties.rotation._value;
+                document.getElementById('rectangle-min-height').value = entity.properties.minHeight._value;
+                document.getElementById('rectangle-max-height').value = entity.properties.maxHeight._value;
+                document.getElementById('rectangle-type').value = entity.properties.type._value;
+            } else if (entity.type === 'polygon') {
+                document.getElementById('polygon-name').value = entity.name;
+                document.getElementById('polygon-min-height').value = entity.properties.minHeight._value;
+                document.getElementById('polygon-max-height').value = entity.properties.maxHeight._value;
+                document.getElementById('polygon-type').value = entity.properties.type._value;
+                document.getElementById('polygon-color').value = entity.properties.color._value;
+                document.getElementById('polygon-color-text').value = entity.properties.color._value;
+                
+                // 更新顶点列表
+                const verticesContainer = document.getElementById('polygon-vertices');
+                verticesContainer.innerHTML = '';
+                
+                entity.properties.vertices._value.forEach((vertex, index) => {
+                    const vertexHTML = `
+                        <div class="p-2 bg-gray-50 rounded border border-gray-200 ${index > 0 ? 'mt-2' : ''}">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>顶点 ${index + 1}</span>
+                                <button class="text-danger hover:text-danger/80"><i class="fa fa-times"></i></button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" value="${vertex.lon.toFixed(4)}" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                                <input type="number" value="${vertex.lat.toFixed(4)}" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                            </div>
+                        </div>
+                    `;
+                    verticesContainer.insertAdjacentHTML('beforeend', vertexHTML);
+                });
+                
+                // 为顶点删除按钮添加事件
+                const deleteButtons = verticesContainer.querySelectorAll('button');
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        this.closest('div.p-2').remove();
+                        updateVertexNumbers();
+                    });
+                });
+            }
+        }
+        
+        // 应用属性更改
+        function applyPropertiesChanges() {
+            if (!currentEntity) return;
+            
+            if (currentEntity.type === 'circle') {
+                // 更新圆形空域属性
+                currentEntity.name = document.getElementById('circle-name').value;
+                const lon = parseFloat(document.getElementById('circle-lon').value);
+                const lat = parseFloat(document.getElementById('circle-lat').value);
+                const radius = parseFloat(document.getElementById('circle-radius').value);
+                const minHeight = parseFloat(document.getElementById('circle-min-height').value);
+                const maxHeight = parseFloat(document.getElementById('circle-max-height').value);
+                const type = document.getElementById('circle-type').value;
+                const color = document.getElementById('circle-color').value;
+                
+                // 更新实体
+                currentEntity.position = Cesium.Cartesian3.fromDegrees(lon, lat);
+                currentEntity.ellipse.semiMinorAxis = radius;
+                currentEntity.ellipse.semiMajorAxis = radius;
+                currentEntity.ellipse.height = minHeight;
+                currentEntity.ellipse.extrudedHeight = maxHeight;
+                currentEntity.ellipse.material = Cesium.Color.fromCssColorString(color).withAlpha(0.3);
+                currentEntity.ellipse.outlineColor = Cesium.Color.fromCssColorString(color);
+                
+                // 更新属性存储
+                currentEntity.properties.lon = lon;
+                currentEntity.properties.lat = lat;
+                currentEntity.properties.radius = radius;
+                currentEntity.properties.minHeight = minHeight;
+                currentEntity.properties.maxHeight = maxHeight;
+                currentEntity.properties.type = type;
+                currentEntity.properties.color = color;
+                
+                // 更新选中信息
+                document.getElementById('selected-name').textContent = currentEntity.name;
+                document.getElementById('selected-desc').textContent = 
+                    `半径: ${radius}m | 高度: ${minHeight}-${maxHeight}m`;
+            } else if (currentEntity.type === 'rectangle') {
+                // 矩形空域属性更新逻辑
+                currentEntity.name = document.getElementById('rectangle-name').value;
+                const lon = parseFloat(document.getElementById('rectangle-lon').value);
+                const lat = parseFloat(document.getElementById('rectangle-lat').value);
+                const width = parseFloat(document.getElementById('rectangle-width').value);
+                const length = parseFloat(document.getElementById('rectangle-length').value);
+                const rotation = parseFloat(document.getElementById('rectangle-rotation').value);
+                const minHeight = parseFloat(document.getElementById('rectangle-min-height').value);
+                const maxHeight = parseFloat(document.getElementById('rectangle-max-height').value);
+                const type = document.getElementById('rectangle-type').value;
+                
+                // 简化的经纬度转换
+                const lonPerMeter = 1 / 111319.9; // 经度每米度数
+                const latPerMeter = 1 / 111319.9; // 纬度每米度数
+                
+                // 更新矩形范围
+                const halfWidth = width * lonPerMeter / 2;
+                const halfLength = length * latPerMeter / 2;
+                
+                currentEntity.rectangle.coordinates = Cesium.Rectangle.fromDegrees(
+                    lon - halfWidth, lat - halfLength,
+                    lon + halfWidth, lat + halfLength
+                );
+                
+                // 更新其他属性
+                currentEntity.rectangle.rotation = Cesium.Math.toRadians(rotation);
+                currentEntity.rectangle.height = minHeight;
+                currentEntity.rectangle.extrudedHeight = maxHeight;
+                
+                // 更新属性存储
+                currentEntity.properties.lon = lon;
+                currentEntity.properties.lat = lat;
+                currentEntity.properties.width = width;
+                currentEntity.properties.length = length;
+                currentEntity.properties.rotation = rotation;
+                currentEntity.properties.minHeight = minHeight;
+                currentEntity.properties.maxHeight = maxHeight;
+                currentEntity.properties.type = type;
+                
+                // 更新选中信息
+                document.getElementById('selected-name').textContent = currentEntity.name;
+                document.getElementById('selected-desc').textContent = 
+                    `${width}×${length}m | 高度: ${minHeight}-${maxHeight}m`;
+            } else if (currentEntity.type === 'polygon') {
+                // 多边形空域属性更新逻辑
+                currentEntity.name = document.getElementById('polygon-name').value;
+                const minHeight = parseFloat(document.getElementById('polygon-min-height').value);
+                const maxHeight = parseFloat(document.getElementById('polygon-max-height').value);
+                const type = document.getElementById('polygon-type').value;
+                const color = document.getElementById('polygon-color').value;
+                
+                // 收集顶点坐标
+                const verticesInputs = document.querySelectorAll('#polygon-vertices input[type="number"]');
+                const vertices = [];
+                
+                for (let i = 0; i < verticesInputs.length; i += 2) {
+                    vertices.push({
+                        lon: parseFloat(verticesInputs[i].value),
+                        lat: parseFloat(verticesInputs[i + 1].value)
+                    });
+                }
+                
+                // 至少需要3个顶点
+                if (vertices.length < 3) {
+                    showError('多边形至少需要3个顶点');
+                    return;
+                }
+                
+                // 更新多边形形状
+                const positions = vertices.map(vertex => 
+                    Cesium.Cartesian3.fromDegrees(vertex.lon, vertex.lat)
+                );
+                
+                currentEntity.polygon.hierarchy = new Cesium.PolygonHierarchy(positions);
+                currentEntity.polygon.height = minHeight;
+                currentEntity.polygon.extrudedHeight = maxHeight;
+                currentEntity.polygon.material = Cesium.Color.fromCssColorString(color).withAlpha(0.3);
+                currentEntity.polygon.outlineColor = Cesium.Color.fromCssColorString(color);
+                
+                // 更新属性存储
+                currentEntity.properties.vertices = vertices;
+                currentEntity.properties.minHeight = minHeight;
+                currentEntity.properties.maxHeight = maxHeight;
+                currentEntity.properties.type = type;
+                currentEntity.properties.color = color;
+                
+                // 更新选中信息
+                document.getElementById('selected-name').textContent = currentEntity.name;
+                document.getElementById('selected-desc').textContent = 
+                    `顶点: ${vertices.length}个 | 高度: ${minHeight}-${maxHeight}m`;
+            }
+            
+            // 刷新视图
+            viewer.scene.requestRender();
+            
+            // 显示成功提示
+            showError('空域属性已更新', 'success');
+        }
+        
+        // 进入绘制模式
+        function enterDrawingMode() {
+            drawingMode = true;
+            document.getElementById('drawing-hint').classList.remove('hidden');
+            
+            // 更新提示文本
+            let shapeName = activeShapeType === 'circle' ? '圆形' : 
+                           activeShapeType === 'rectangle' ? '矩形' : '多边形';
+            document.getElementById('hint-text').textContent = `点击地图添加${shapeName}空域`;
+        }
+        
+        // 退出绘制模式
+        function exitDrawingMode() {
+            drawingMode = false;
+            document.getElementById('drawing-hint').classList.add('hidden');
+        }
+        
+        // 删除选中的空域
+        function deleteSelectedAirspace() {
+            if (!currentEntity) return;
+            
+            if (confirm(`确定要删除 ${currentEntity.name} 吗？`)) {
+                viewer.entities.remove(currentEntity);
+                entities = entities.filter(entity => entity !== currentEntity);
+                deselectAirspace();
+            }
+        }
+        
+        // 复制选中的空域
+        function copySelectedAirspace() {
+            if (!currentEntity) return;
+            
+            // 创建新的空域，位置略微偏移
+            const offset = 0.002; // 大约200米
+            createAirspace(
+                currentEntity.type,
+                currentEntity.properties.lon._value + offset,
+                currentEntity.properties.lat._value + offset
+            );
+        }
+        
+        // 清除所有空域
+        function clearAllAirspaces() {
+            if (entities.length === 0) return;
+            
+            if (confirm(`确定要清除所有 ${entities.length} 个空域吗？`)) {
+                viewer.entities.removeAll();
+                entities = [];
+                deselectAirspace();
+            }
+        }
+        
+        // 切换底图
+        function switchImagery() {
+            // 检查图层数组是否有效
+            if (!imageryLayers || imageryLayers.length === 0) {
+                showError('底图图层未加载，请稍后重试');
+                return;
+            }
+            
+            // 隐藏当前图层
+            imageryLayers[currentImageryIndex].show = false;
+            
+            // 计算下一个图层索引
+            currentImageryIndex = (currentImageryIndex + 1) % imageryLayers.length;
+            
+            // 显示新图层
+            imageryLayers[currentImageryIndex].show = true;
+        }
+        
+        // 保存空域配置
+        function saveAirspaceConfig() {
+            if (entities.length === 0) {
+                showError('没有可保存的空域数据');
+                return;
+            }
+            
+            // 收集空域数据
+            const airspaceData = entities.map(entity => {
+                return {
+                    id: entity.id,
+                    name: entity.name,
+                    type: entity.type,
+                    properties: entity.properties
+                };
+            });
+            
+            // 在实际应用中，这里会将数据发送到服务器
+            console.log('保存空域配置:', airspaceData);
+            
+            // 创建下载链接
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(airspaceData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `airspace_config_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            // 显示保存成功提示
+            showError(`成功保存 ${entities.length} 个空域配置`, 'success');
+        }
+        
+        // 显示错误/成功提示
+        function showError(message, type = 'error') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // 初始化Cesium函数（完全使用本地资源）
+        function initCesium() {
+            // 显示加载指示器
+            document.getElementById('loading-indicator').style.display = 'block';
+            
+            try {
+                // 配置Cesium使用本地资源（不依赖任何在线服务）
+                //Cesium.BingMapsApi.defaultKey = ''; // 清除Bing地图密钥
+                // 不设置Cesium Ion访问令牌，完全离线运行
+                
+                // 初始化视图器，使用本地地形和影像
+                viewer = new Cesium.Viewer('cesiumContainer', {
+                    // 禁用所有需要在线服务的组件
+                    imageryProvider: new Cesium.SingleTileImageryProvider({
+                        url: './images/local-base-map.jpg' // 本地底图，需自行准备
+                    }),
+                    terrainProvider: new Cesium.EllipsoidTerrainProvider(), // 使用简单的椭球体地形，无在线地形数据
+                    baseLayerPicker: false, // 禁用底图选择器（避免依赖在线服务）
+                    geocoder: false, // 禁用地理编码（依赖在线服务）
+                    homeButton: false,
+                    sceneModePicker: false,
+                    navigationHelpButton: false,
+                    animation: false,
+                    timeline: false,
+                    fullscreenButton: false,
+                    vrButton: false,
+                    infoBox: false,
+                    selectionIndicator: false,
+                    requestRenderMode: true,
+                    maximumRenderTimeChange: Infinity,
+                    // 配置本地资源路径
+                    cesiumPath: './libs/cesium/' // 指向本地Cesium库路径
+                });
+                
+                // 添加更多本地底图（可选）
+                imageryLayers = viewer.imageryLayers;
+                currentImageryIndex = 0;
+                
+                // 可以添加更多本地底图
+                imageryLayers.addImageryProvider(new Cesium.SingleTileImageryProvider({
+                    url: './images/local-satellite-map.jpg' // 本地卫星图，需自行准备
+                }));
+                // 默认隐藏第二个底图
+                if (imageryLayers.length > 1) {
+                    imageryLayers[1].show = false;
+                }
+                
+                // 隐藏Cesium logo和版权信息
+                viewer._cesiumWidget._creditContainer.style.display = 'none';
+                
+                // 初始相机位置 - 北京
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(116.3974, 39.9088, 5000),
+                    duration: 1
+                });
+                
+                // 地图点击事件 - 用于添加空域
+                viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+                    if (drawingMode) {
+                        const cartesian = viewer.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
+                        if (cartesian) {
+                            const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+                            const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+                            const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+                            
+                            // 创建空域
+                            createAirspace(activeShapeType, longitude, latitude);
+                            
+                            // 退出绘制模式
+                            exitDrawingMode();
+                        }
+                    } else {
+                        // 处理选择逻辑
+                        const pick = viewer.scene.pick(movement.position);
+                        if (Cesium.defined(pick) && pick.id) {
+                            selectAirspace(pick.id);
+                        } else {
+                            deselectAirspace();
+                        }
+                    }
+                }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+                
+                // 隐藏加载指示器
+                document.getElementById('loading-indicator').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Cesium初始化错误:', error);
+                showError('地图初始化失败: ' + error.message);
+                document.getElementById('loading-indicator').style.display = 'none';
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = function() {
+            // 初始化Cesium（完全使用本地资源）
+            initCesium();
+            
+            // 形状选择按钮事件
+            document.getElementById('circle-btn').addEventListener('click', () => {
+                activeShapeType = 'circle';
+                updateShapeButtons();
+            });
+            
+            document.getElementById('rectangle-btn').addEventListener('click', () => {
+                activeShapeType = 'rectangle';
+                updateShapeButtons();
+            });
+            
+            document.getElementById('polygon-btn').addEventListener('click', () => {
+                activeShapeType = 'polygon';
+                updateShapeButtons();
+            });
+            
+            // 更新形状按钮状态
+            function updateShapeButtons() {
+                document.querySelectorAll('.shape-btn').forEach(btn => {
+                    btn.classList.remove('shape-active', 'shape-inactive');
+                    btn.classList.add('shape-inactive');
+                });
+                document.getElementById(`${activeShapeType}-btn`).classList.remove('shape-inactive');
+                document.getElementById(`${activeShapeType}-btn`).classList.add('shape-active');
+            }
+            
+            // 添加空域按钮事件
+            document.getElementById('add-btn').addEventListener('click', enterDrawingMode);
+            
+            // 删除按钮事件
+            document.getElementById('delete-btn').addEventListener('click', deleteSelectedAirspace);
+            
+            // 复制按钮事件
+            document.getElementById('copy-btn').addEventListener('click', copySelectedAirspace);
+            
+            // 清除按钮事件
+            document.getElementById('clear-btn').addEventListener('click', clearAllAirspaces);
+            
+            // 切换底图按钮事件
+            document.getElementById('imagery-btn').addEventListener('click', switchImagery);
+            
+            // 应用更改按钮事件
+            document.getElementById('apply-btn').addEventListener('click', applyPropertiesChanges);
+            
+            // 取消按钮事件
+            document.getElementById('cancel-btn').addEventListener('click', () => {
+                if (currentEntity) {
+                    updatePropertiesPanel(currentEntity);
+                }
+            });
+            
+            // 保存按钮事件
+            document.getElementById('save-btn').addEventListener('click', saveAirspaceConfig);
+            
+            // 半径滑块与输入框联动
+            const radiusInput = document.getElementById('circle-radius');
+            const radiusSlider = document.getElementById('circle-radius-slider');
+            const radiusValue = document.getElementById('circle-radius-value');
+            
+            if (radiusInput && radiusSlider && radiusValue) {
+                radiusInput.addEventListener('input', () => {
+                    radiusSlider.value = radiusInput.value;
+                    radiusValue.textContent = radiusInput.value;
+                });
+                
+                radiusSlider.addEventListener('input', () => {
+                    radiusInput.value = radiusSlider.value;
+                    radiusValue.textContent = radiusSlider.value;
+                });
+            }
+            
+            // 旋转角度滑块与输入框联动
+            const rotationInput = document.getElementById('rectangle-rotation');
+            const rotationSlider = document.getElementById('rectangle-rotation-slider');
+            const rotationValue = document.getElementById('rectangle-rotation-value');
+            
+            if (rotationInput && rotationSlider && rotationValue) {
+                rotationInput.addEventListener('input', () => {
+                    rotationSlider.value = rotationInput.value;
+                    rotationValue.textContent = rotationInput.value;
+                });
+                
+                rotationSlider.addEventListener('input', () => {
+                    rotationInput.value = rotationSlider.value;
+                    rotationValue.textContent = rotationSlider.value;
+                });
+            }
+            
+            // 圆形颜色选择器联动
+            const colorInput = document.getElementById('circle-color');
+            const colorText = document.getElementById('circle-color-text');
+            
+            if (colorInput && colorText) {
+                colorInput.addEventListener('input', () => {
+                    colorText.value = colorInput.value;
+                });
+                
+                colorText.addEventListener('input', () => {
+                    if (/^#([0-9A-F]{3}){1,2}$/i.test(colorText.value)) {
+                        colorInput.value = colorText.value;
+                    }
+                });
+            }
+            
+            // 多边形颜色选择器联动
+            const polygonColorInput = document.getElementById('polygon-color');
+            const polygonColorText = document.getElementById('polygon-color-text');
+            
+            if (polygonColorInput && polygonColorText) {
+                polygonColorInput.addEventListener('input', () => {
+                    polygonColorText.value = polygonColorInput.value;
+                });
+                
+                polygonColorText.addEventListener('input', () => {
+                    if (/^#([0-9A-F]{3}){1,2}$/i.test(polygonColorText.value)) {
+                        polygonColorInput.value = polygonColorText.value;
+                    }
+                });
+            }
+            
+            // 地图控制按钮事件
+            document.getElementById('zoom-in').addEventListener('click', () => {
+                viewer.camera.zoomIn(500);
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', () => {
+                viewer.camera.zoomOut(500);
+            });
+            
+            document.getElementById('reset-view').addEventListener('click', () => {
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(116.3974, 39.9088, 5000),
+                    duration: 1
+                });
+            });
+            
+            document.getElementById('fullscreen').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`全屏请求错误: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+            
+            // 添加顶点按钮事件
+            document.getElementById('add-vertex').addEventListener('click', () => {
+                const verticesContainer = document.getElementById('polygon-vertices');
+                const vertexCount = verticesContainer.children.length + 1;
+                
+                const vertexHTML = `
+                    <div class="p-2 bg-gray-50 rounded border border-gray-200 mt-2">
+                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>顶点 ${vertexCount}</span>
+                            <button class="text-danger hover:text-danger/80"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" value="116.3974" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                            <input type="number" value="39.9088" step="0.0001" class="px-2 py-1.5 text-sm border border-gray-300 rounded">
+                        </div>
+                    </div>
+                `;
+                
+                verticesContainer.insertAdjacentHTML('beforeend', vertexHTML);
+                
+                // 为新添加的删除按钮添加事件
+                const deleteButtons = verticesContainer.querySelectorAll('button');
+                deleteButtons[deleteButtons.length - 1].addEventListener('click', function() {
+                    this.closest('div.p-2').remove();
+                    updateVertexNumbers();
+                });
+            });
+            
+            // 更新顶点编号
+            function updateVertexNumbers() {
+                const vertices = document.querySelectorAll('#polygon-vertices > div');
+                vertices.forEach((vertex, index) => {
+                    vertex.querySelector('span').textContent = `顶点 ${index + 1}`;
+                });
+            }
+            
+            // 为初始顶点删除按钮添加事件
+            const initialDeleteButtons = document.querySelectorAll('#polygon-vertices button');
+            initialDeleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('div.p-2').remove();
+                    updateVertexNumbers();
+                });
+            });
+        };
+    </script>
+</body>
+</html>

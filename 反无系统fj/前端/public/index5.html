@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>频谱数据可视化 - 基于数据库结构</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6ff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.5s ease;
+        }
+
+        .light-mode {
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            color: #2d3436;
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .light-mode h1 {
+            background: linear-gradient(90deg, #2980b9, #6dd5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        /* 数据筛选区样式 */
+        .data-filter {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 0 2rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .light-mode .data-filter {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .filter-group input, .filter-group select {
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #e6e6ff;
+            font-size: 0.9rem;
+        }
+
+        .light-mode .filter-group input, .light-mode .filter-group select {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #2d3436;
+        }
+
+        /* 控制区样式 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 1rem 0 2rem;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        label {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 150px;
+            accent-color: #4facfe;
+        }
+
+        button {
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+        }
+
+        .light-mode button {
+            background: linear-gradient(90deg, #2980b9, #6dd5fa);
+            box-shadow: 0 4px 15px rgba(109, 213, 250, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .light-mode button:hover {
+            box-shadow: 0 6px 20px rgba(109, 213, 250, 0.4);
+        }
+
+        /* 数据信息展示区 */
+        .data-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin: 0 2rem 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .light-mode .data-info {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .info-label {
+            opacity: 0.7;
+            margin-bottom: 0.2rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #4facfe;
+        }
+
+        .light-mode .info-value {
+            color: #2980b9;
+        }
+
+        /* 频谱容器样式 */
+        .spectrum-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .frequency-axis {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 1200px;
+            margin-bottom: 1rem;
+        }
+
+        .frequency-mark {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            width: 40px;
+            text-align: center;
+        }
+
+        .spectrum-canvas {
+            width: 90%;
+            max-width: 1200px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .spectrum-canvas {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        footer {
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .spectrum-canvas {
+                height: 300px;
+            }
+
+            .controls, .data-filter {
+                gap: 1rem;
+            }
+
+            .control-group, .filter-group {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .data-info {
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .spectrum-canvas {
+                height: 250px;
+            }
+
+            .frequency-mark {
+                font-size: 0.8rem;
+            }
+
+            .data-filter {
+                margin: 0 1rem 2rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>频谱数据可视化</h1>
+        <p class="subtitle">基于数据库 spectrum_info 结构的频谱展示（支持近5分钟查询）</p>
+    </header>
+
+    <!-- 数据筛选区 -->
+    <div class="data-filter">
+        <div class="filter-group">
+            <label for="station-id">站ID</label>
+            <input type="number" id="station-id" placeholder="输入站ID" min="1">
+        </div>
+        <div class="filter-group">
+            <label for="channel">通道号</label>
+            <input type="number" id="channel" placeholder="输入通道号" min="0" max="255">
+        </div>
+        <div class="filter-group">
+            <label for="freq-range">频率范围(Hz)</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="number" id="start-freq" placeholder="起始频率" min="0">
+                <span>-</span>
+                <input type="number" id="stop-freq" placeholder="结束频率" min="0">
+            </div>
+        </div>
+        <div class="filter-group">
+            <label for="data-type">数据类型</label>
+            <select id="data-type">
+                <option value="1" selected>频谱数据(u8)</option>
+            </select>
+        </div>
+        <!-- 新增：近5分钟开关 -->
+        <div class="filter-group">
+            <label for="last5Minutes">仅查近5分钟</label>
+            <input type="checkbox" id="last5Minutes" checked>
+        </div>
+        <button id="load-data">加载频谱数据</button>
+        <button id="mock-data">加载模拟数据</button>
+    </div>
+
+    <!-- 数据信息展示 -->
+    <div class="data-info">
+        <div class="info-item">
+            <span class="info-label">当前站ID</span>
+            <span id="current-station" class="info-value">未加载</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">通道号</span>
+            <span id="current-channel" class="info-value">未加载</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">频率范围</span>
+            <span id="current-freq-range" class="info-value">未加载</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">步进频率(Hz)</span>
+            <span id="current-step-freq" class="info-value">未加载</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">数据点数量</span>
+            <span id="current-data-len" class="info-value">未加载</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">入库时间</span>
+            <span id="current-create-time" class="info-value">未加载</span>
+        </div>
+    </div>
+
+    <!-- 控制区 -->
+    <div class="controls">
+        <div class="control-group">
+            <label for="amplitude">振幅强度:</label>
+            <input type="range" id="amplitude" min="0.1" max="2" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label for="speed">动画速度:</label>
+            <input type="range" id="speed" min="5" max="50" step="5" value="20">
+        </div>
+        <button id="theme-toggle">切换明暗模式</button>
+        <button id="reset">重置参数</button>
+    </div>
+
+    <!-- 频谱展示区 -->
+    <div class="spectrum-container">
+        <div class="frequency-axis" id="frequency-axis">
+            <!-- 动态生成频率刻度 -->
+        </div>
+        <canvas id="spectrum" class="spectrum-canvas"></canvas>
+    </div>
+
+    <footer>
+        <p>频谱数据可视化工具 - 基于 spectrum_info 数据表 &copy; 2025</p>
+    </footer>
+
+    <script>
+        // 获取DOM元素
+        const canvas = document.getElementById('spectrum');
+        const ctx = canvas.getContext('2d');
+        const amplitudeSlider = document.getElementById('amplitude');
+        const speedSlider = document.getElementById('speed');
+        const themeToggle = document.getElementById('theme-toggle');
+        const resetBtn = document.getElementById('reset');
+        const loadDataBtn = document.getElementById('load-data');
+        const mockDataBtn = document.getElementById('mock-data');
+        const body = document.body;
+
+        // 数据信息展示元素
+        const currentStation = document.getElementById('current-station');
+        const currentChannel = document.getElementById('current-channel');
+        const currentFreqRange = document.getElementById('current-freq-range');
+        const currentStepFreq = document.getElementById('current-step-freq');
+        const currentDataLen = document.getElementById('current-data-len');
+        const currentCreateTime = document.getElementById('current-create-time');
+
+        // 筛选条件元素
+        const stationIdInput = document.getElementById('station-id');
+        const channelInput = document.getElementById('channel');
+        const startFreqInput = document.getElementById('start-freq');
+        const stopFreqInput = document.getElementById('stop-freq');
+        const dataTypeSelect = document.getElementById('data-type');
+        const last5MinutesCheckbox = document.getElementById('last5Minutes');
+        const frequencyAxis = document.getElementById('frequency-axis');
+
+        // 全局状态
+        let globalState = {
+            // 可视化参数
+            amplitude: parseFloat(amplitudeSlider.value),
+            speed: parseInt(speedSlider.value),
+            animationTime: 0,
+            // 数据库数据
+            spectrumData: null,
+            // 画布参数
+            barWidth: 0,
+            gap: 2,
+            barCount: 0
+        };
+
+        // 设置canvas实际尺寸
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        // 初始化调整canvas尺寸
+        resizeCanvas();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (globalState.spectrumData) {
+                initFrequencyAxis();
+            }
+        });
+
+        // 更新可视化参数
+        function updateParams() {
+            globalState.amplitude = parseFloat(amplitudeSlider.value);
+            globalState.speed = parseInt(speedSlider.value);
+        }
+
+        // 生成模拟频谱数据（适配近5分钟时间）
+        function generateMockData() {
+            const stationId = parseInt(stationIdInput.value) || 1;
+            const channel = parseInt(channelInput.value) || 0;
+            const startFreq = parseInt(startFreqInput.value) || 20;
+            const stopFreq = parseInt(stopFreqInput.value) || 20000;
+            const stepFreq = Math.max(1, Math.floor((stopFreq - startFreq) / 200)); // 最多200个数据点
+            const dataLen = Math.floor((stopFreq - startFreq) / stepFreq) + 1;
+            
+            // 生成模拟电平数据（short类型，单位dBm，范围-120到0）
+            const pData = Array(dataLen).fill(0).map(() => Math.floor(Math.random() * 120) - 120);
+
+            // 模拟近5分钟的入库时间
+            const last5Minutes = last5MinutesCheckbox.checked;
+            let createTime;
+            if (last5Minutes) {
+                // 生成5分钟内的随机时间
+                const now = new Date();
+                const randomTime = new Date(now.getTime() - Math.random() * 5 * 60 * 1000);
+                createTime = randomTime.toISOString().slice(0, 19).replace('T', ' ');
+            } else {
+                createTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            }
+
+            // 模拟数据库数据结构
+            return {
+                id: Math.floor(Math.random() * 1000),
+                channel: channel.toString(),
+                data_type: "1",
+                start_freq: startFreq,
+                stop_freq: stopFreq,
+                step_freq: stepFreq,
+                data_len: dataLen.toString(),
+                p_data: JSON.stringify(pData),
+                create_time: createTime,
+                station_id: stationId
+            };
+        }
+
+        // 加载频谱数据（对接真实后端接口）
+        async function loadSpectrumData() {
+            // 组装请求参数
+            const params = new URLSearchParams();
+            // 基础筛选参数
+            if (stationIdInput.value) params.append("stationId", stationIdInput.value);
+            if (channelInput.value) params.append("channel", channelInput.value);
+            if (startFreqInput.value) params.append("startFreq", startFreqInput.value);
+            if (stopFreqInput.value) params.append("stopFreq", stopFreqInput.value);
+            // 分页参数（只取第一条数据用于可视化）
+            params.append("pageNo", 1);
+            params.append("pageSize", 1);
+            // 近5分钟参数
+            params.append("last5Minutes", last5MinutesCheckbox.checked);
+
+            // 真实接口请求（替换为你的后端地址）
+            const response = await fetch(`/api/spectrum/list?${params.toString()}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`请求失败：${response.status}`);
+            }
+
+            const result = await response.json();
+            // 取分页列表的第一条数据
+            if (result.code === 200 && result.data.records.length > 0) {
+                return result.data.records[0];
+            } else {
+                throw new Error("未查询到符合条件的频谱数据");
+            }
+        }
+
+        // 更新数据信息展示
+        function updateDataInfo(data) {
+            currentStation.textContent = data.station_id || '未知';
+            currentChannel.textContent = data.channel || '未知';
+            currentFreqRange.textContent = `${data.start_freq || 0} - ${data.stop_freq || 0} Hz`;
+            currentStepFreq.textContent = data.step_freq || 0;
+            currentDataLen.textContent = data.data_len || 0;
+            currentCreateTime.textContent = data.create_time || new Date().toLocaleString();
+        }
+
+        // 初始化频率轴刻度
+        function initFrequencyAxis() {
+            const data = globalState.spectrumData;
+            if (!data) return;
+
+            frequencyAxis.innerHTML = '';
+            const startFreq = data.start_freq;
+            const stopFreq = data.stop_freq;
+            
+            // 生成关键频率刻度
+            const freqPoints = [
+                startFreq,
+                Math.floor((startFreq + stopFreq) / 4),
+                Math.floor((startFreq + stopFreq) / 2),
+                Math.floor((startFreq * 3 + stopFreq) / 4),
+                stopFreq
+            ];
+console.log(freqPoints);
+            freqPoints.forEach(freq => {
+                const mark = document.createElement('div');
+                mark.className = 'frequency-mark';
+                // 格式化频率显示（kHz/MHz）
+                if (freq >= 1000000) {
+                    mark.textContent = `${(freq / 1000000).toFixed(1)}MHz`;
+                } else if (freq >= 1000) {
+                    mark.textContent = `${(freq / 1000).toFixed(1)}kHz`;
+                } else {
+                    mark.textContent = `${freq}Hz`;
+                }
+                frequencyAxis.appendChild(mark);
+            });
+        }
+
+        // 初始化频谱数据
+        function initSpectrumData(data) {
+            globalState.spectrumData = data;
+            globalState.barCount = parseInt(data.data_len) || 100;
+            globalState.barWidth = (canvas.width - (globalState.barCount - 1) * globalState.gap) / globalState.barCount;
+            
+            // 更新信息展示和频率轴
+            updateDataInfo(data);
+            initFrequencyAxis();
+        }
+
+        // 绘制频谱（基于真实电平数据）
+        function drawSpectrum() {
+            // 清除画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const data = globalState.spectrumData;
+            const centerY = canvas.height / 2;
+
+            // 如果没有加载数据，绘制默认动画
+            if (!data) {
+                drawDefaultSpectrum();
+                requestAnimationFrame(drawSpectrum);
+                return;
+            }
+
+            // 更新动画时间
+            globalState.animationTime += globalState.speed / 1000;
+
+            // 解析电平数据
+            let pData = [];
+            try {
+                pData = JSON.parse(data.p_data) || [];
+            } catch (e) {
+                console.error('解析电平数据失败:', e);
+                pData = Array(globalState.barCount).fill(0);
+            }
+
+            // 归一化电平数据（-120dBm ~ 0dBm 映射到 0 ~ canvas.height）
+            const normalizeDbm = (dbm) => {
+                const normalized = (dbm + 120) / 120; // 0 ~ 1
+                return normalized * canvas.height * 0.8 * globalState.amplitude;
+            };
+
+            // 绘制频谱柱
+            for (let i = 0; i < globalState.barCount; i++) {
+                if (i >= pData.length) break;
+
+                const x = i * (globalState.barWidth + globalState.gap);
+                // 获取电平值并添加轻微动画效果
+                const baseHeight = normalizeDbm(pData[i]);
+                const animateFactor = Math.sin(i / globalState.barCount * Math.PI * 5 + globalState.animationTime) * 0.1;
+                const height = Math.max(0, baseHeight * (1 + animateFactor));
+
+                // 设置渐变颜色（根据电平值调整颜色）
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                const colorRatio = Math.min(1, height / (canvas.height * 0.8));
+                
+                if (body.classList.contains('light-mode')) {
+                    gradient.addColorStop(0, `hsl(200, ${colorRatio * 100}%, 40%)`);
+                    gradient.addColorStop(0.5, `hsl(190, ${colorRatio * 100}%, 60%)`);
+                    gradient.addColorStop(1, `hsl(180, ${colorRatio * 100}%, 90%)`);
+                } else {
+                    gradient.addColorStop(0, `hsl(185, ${colorRatio * 100}%, 50%)`);
+                    gradient.addColorStop(0.5, `hsl(195, ${colorRatio * 100}%, 40%)`);
+                    gradient.addColorStop(1, `hsl(205, ${colorRatio * 100}%, 20%)`);
+                }
+
+                // 绘制频谱柱（中心对称）
+                ctx.fillStyle = gradient;
+                ctx.fillRect(
+                    x, 
+                    centerY - height / 2, 
+                    globalState.barWidth, 
+                    height
+                );
+
+                // 绘制柱边框
+                ctx.strokeStyle = body.classList.contains('light-mode') ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(
+                    x, 
+                    centerY - height / 2, 
+                    globalState.barWidth, 
+                    height
+                );
+            }
+
+            // 绘制中心线
+            ctx.strokeStyle = body.classList.contains('light-mode') ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+
+            // 循环绘制
+            requestAnimationFrame(drawSpectrum);
+        }
+
+        // 绘制默认频谱（未加载数据时）
+        function drawDefaultSpectrum() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerY = canvas.height / 2;
+            const barCount = 100;
+            const barWidth = (canvas.width - (barCount - 1) * globalState.gap) / barCount;
+
+            globalState.animationTime += globalState.speed / 1000;
+
+            for (let i = 0; i < barCount; i++) {
+                const x = i * (barWidth + globalState.gap);
+                const freq = i / barCount * Math.PI * 10;
+                const wave = Math.sin(freq + globalState.animationTime) * globalState.amplitude;
+                const noise = Math.random() * 0.2;
+                const height = Math.abs(wave + noise) * centerY * 0.8;
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                if (body.classList.contains('light-mode')) {
+                    gradient.addColorStop(0, '#2980b9');
+                    gradient.addColorStop(0.5, '#6dd5fa');
+                    gradient.addColorStop(1, '#ffffff');
+                } else {
+                    gradient.addColorStop(0, '#00f2fe');
+                    gradient.addColorStop(0.5, '#4facfe');
+                    gradient.addColorStop(1, '#1a1a2e');
+                }
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, centerY - height / 2, barWidth, height / 2);
+                ctx.fillRect(x, centerY, barWidth, height / 2);
+
+                ctx.strokeStyle = body.classList.contains('light-mode') ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, centerY - height / 2, barWidth, height);
+            }
+
+            ctx.strokeStyle = body.classList.contains('light-mode') ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+        }
+
+        // 事件监听
+        // 切换主题
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+        });
+
+        // 重置参数
+        resetBtn.addEventListener('click', () => {
+            amplitudeSlider.value = 1;
+            speedSlider.value = 20;
+            updateParams();
+        });
+
+        // 加载数据
+        loadDataBtn.addEventListener('click', async () => {
+            loadDataBtn.textContent = '加载中...';
+            loadDataBtn.disabled = true;
+            
+            try {
+                const data = await loadSpectrumData();
+                initSpectrumData(data);
+            } catch (e) {
+                alert('加载数据失败: ' + e.message);
+            } finally {
+                loadDataBtn.textContent = '加载频谱数据';
+                loadDataBtn.disabled = false;
+            }
+        });
+
+        // 加载模拟数据
+        mockDataBtn.addEventListener('click', () => {
+            const mockData = generateMockData();
+            initSpectrumData(mockData);
+        });
+
+        // 监听参数变化
+        amplitudeSlider.addEventListener('input', updateParams);
+        speedSlider.addEventListener('input', updateParams);
+
+        // 初始化
+        updateParams();
+        drawSpectrum();
+    </script>
+</body>
+</html>

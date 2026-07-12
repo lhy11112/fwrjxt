@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavDetectSpectrumMapper">
+    <!-- 按频率范围查询 -->
+    <select id="selectByFreqRange" resultType="org.jeecg.modules.uav.entity.UavDetectSpectrum">
+        SELECT * FROM uav_detect_spectrum
+        WHERE station_id = #{stationId}
+          AND freq BETWEEN #{minFreq} AND #{maxFreq}
+          AND data_time >= #{startTime}
+        ORDER BY freq ASC, data_time DESC
+    </select>
+
+    <!-- 查询指定时间内的信号强度统计 -->
+    <select id="selectRssiStats" resultType="java.util.Map">
+        SELECT 
+            AVG(rssi) as avgRssi, 
+            MAX(rssi) as maxRssi, 
+            MIN(rssi) as minRssi,
+            COUNT(*) as count
+        FROM uav_detect_spectrum
+        WHERE station_id = #{stationId}
+          AND data_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+</mapper>
+    

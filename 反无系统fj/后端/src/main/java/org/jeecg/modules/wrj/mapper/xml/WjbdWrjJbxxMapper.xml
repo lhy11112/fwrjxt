@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.wrj.mapper.WjbdWrjJbxxMapper">
+
+    <select id="listByKyid" resultType="org.jeecg.modules.wrj.entity.WjbdWrjJbxx">
+        select * from wjbd_wrj_jbxx where id not in (select wrjid from wjbd_wrj_kysq where kyid = #{kyid})
+    </select>
+    <select id="getWrjCount" resultType="java.util.Map">
+        select brand,model,count(*) num from wjbd_wrj_jbxx group by brand ,model
+    </select>
+    <select id="getBmdList" resultType="org.jeecg.modules.wrj.entity.WjbdWrjJbxx">
+        select * from wjbd_wrj_jbxx where id in( select wrjid from wjbd_wrj_hbmdsq where mdlx='白名单')
+    </select>
+    <select id="getHmdList" resultType="org.jeecg.modules.wrj.entity.WjbdWrjJbxx">
+        select * from wjbd_wrj_jbxx where id in( select wrjid from wjbd_wrj_hbmdsq where mdlx='黑名单')
+    </select>
+</mapper>

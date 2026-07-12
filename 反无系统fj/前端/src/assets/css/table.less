@@ -1,0 +1,27 @@
+.el-table {
+    --el-table-text-color: #000000A6;
+}
+.el-table.public-table {
+    --el-table-tr-bg-color: transparent;
+    --el-table-header-bg-color: rgba(255, 255, 255, 0.15);
+    --el-table-header-text-color: #fff;
+    --el-table-border-color: rgba(255, 255, 255, 0.15);
+    --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
+    --el-table-row-2n-bg-color: rgba(255, 255, 255, 0.05);
+    background: transparent;
+
+    :deep(.el-table__body-wrapper) {
+
+        .el-table__row:nth-child(2n) {
+            background-color: var(--el-table-row-2n-bg-color);
+            
+            td {
+                background: transparent;
+            }
+        }
+    }
+}
+
+.el-table.white-text-table {
+    --el-table-text-color: #fff;
+}

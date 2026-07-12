@@ -1,0 +1,81 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.powerPage {
+    width: 100%;
+    height: calc(99%);
+    position: absolute;
+    top:1%;
+    left:0;
+    z-index: 10;
+}
+
+.leftContent {
+    width: 25%;
+    height: 100%;
+    position: absolute;
+    /* z-index: 8; */
+    top: 0%;
+    left: 10px;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-evenly;
+    pointer-events: auto;
+}
+
+.topList,
+.middleList,
+.bottomList {
+    width: 100%;
+    height: 48%;
+}
+
+/* .topList img,
+.middleList img,
+.bottomList img {
+    width: 100%;
+    height: calc(100% - 4px);
+} */
+
+.rightContent {
+    width: 25%;
+    height: 100%;
+    position: absolute;
+    /* z-index: 8; */
+    top: 0%;
+    right: 10px;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-evenly;
+    pointer-events: auto;
+}
+
+::v-deep .ant-modal-content {
+    background-color: #1e1e1e !important;
+}
+
+::v-deep .ant-modal-header {
+    background-color: #1e1e1e !important;
+    color: #fff !important;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+::v-deep .ant-modal-close-x {
+    color: #fff !important;
+}
+
+::v-deep .ant-modal-title {
+    color: #fff !important;
+}
+/*GIS tooltip 深色背景*/
+.leaflet-tooltip {
+    background-color: #262716e0 !important;
+    border: 1px solid #262716e0 !important;
+    color: #fff !important;
+}
+.leaflet-tooltip-right:before {
+    border-right-color: #fff !important;
+}

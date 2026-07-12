@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavDeviceConfigMapper">
+    <select id="getypsbCount" resultType="java.util.Map">
+        SELECT status title , count(*) value FROM uav_device_config where device_type = 'TRAP'  group by status
+    </select>
+    <select id="getgrsbCount" resultType="java.util.Map">
+        SELECT status title , count(*) value FROM uav_device_config  where device_type = 'DISTURB'  group by status
+    </select>
+    <select id="getzcsbCount" resultType="java.util.Map">
+        SELECT status title , count(*) value FROM uav_device_config  where device_type = 'DETECT'  group by status
+    </select>
+    <select id="getSbCountByLx" resultType="java.lang.Integer">
+        SELECT ifnull(count(*),0) value FROM uav_device_config where device_type = #{type} and  status = #{title} group by device_type ,status
+    </select>
+</mapper>
+    

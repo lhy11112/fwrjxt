@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavDfDataMapper">
+    <!-- 按目标类型和时间范围查询 -->
+    <select id="selectByTargetType" resultType="org.jeecg.modules.uav.entity.UavDfData">
+        SELECT * FROM uav_df_data
+        WHERE station_id = #{stationId}
+          AND target_type = #{targetType}
+          AND data_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY data_time DESC
+    </select>
+
+    <!-- 查询指定范围内的无人机数据 -->
+    <select id="selectByLocationRange" resultType="org.jeecg.modules.uav.entity.UavDfData">
+        SELECT * FROM uav_df_data
+        WHERE longitude BETWEEN #{minLng} AND #{maxLng}
+          AND latitude BETWEEN #{minLat} AND #{maxLat}
+          AND data_time >= #{startTime}
+        ORDER BY distance ASC
+    </select>
+</mapper>
+    

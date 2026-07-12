@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.wrj.mapper.WjbdWrjHbmdsqMapper">
+
+    <select id="getHmdList" resultType="org.jeecg.modules.wrj.vo.WjbdWrjJbxxVo">
+        SELECT t1.id, t1.mdlx, concat(t2.brand, "-", t2.model, "-", t2.serial_number) name, t1.wrjid
+        from wjbd_wrj_hbmdsq t1
+                 LEFT JOIN wjbd_wrj_jbxx t2 on t1.wrjid = t2.id
+        where t1.mdlx = '黑名单'
+    </select>
+    <select id="getBmdList" resultType="org.jeecg.modules.wrj.vo.WjbdWrjJbxxVo">
+        SELECT t1.id, t1.mdlx, concat(t2.brand, "-", t2.model, "-", t2.serial_number) name, t1.wrjid
+        from wjbd_wrj_hbmdsq t1
+                 LEFT JOIN wjbd_wrj_jbxx t2 on t1.wrjid = t2.id
+        where t1.mdlx = '白名单'
+    </select>
+    <select id="getWsqList" resultType="org.jeecg.modules.wrj.vo.WjbdWrjJbxxVo">
+        SELECT t1.id, t1.mdlx, concat(t2.brand, "-", t2.model, "-", t2.serial_number) name, t1.wrjid
+        from wjbd_wrj_hbmdsq t1
+                 LEFT JOIN wjbd_wrj_jbxx t2 on t1.wrjid = t2.id
+        where t1.mdlx = '未授权'
+    </select>
+</mapper>

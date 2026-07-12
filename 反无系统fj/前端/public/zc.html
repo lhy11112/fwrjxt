@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet 动态扇形与无人机侦测演示</title>
+
+    <link rel="stylesheet" href="./lib/Build/leaflet/leaflet/leaflet.css" />
+        <script src="./lib/Build/leaflet/leaflet/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+        
+        /* 自定义无人机图标样式 */
+        .drone-icon {
+            text-align: center;
+            line-height: 20px;
+            font-size: 20px;
+            text-shadow: 0 0 5px #000;
+        }
+        
+        /* 模拟数据控制面板样式 */
+        #panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+<div id="panel">
+    <h3>侦测设备状态</h3>
+    <div>方位角 (Angle): <span id="angle-val">0</span>°</div>
+    <div>半径 (Radius): 500 米</div>
+    <div>扇形宽度: 30°</div>
+    <div>状态: <span style="color:#0f0">扫描中...</span></div>
+</div>
+
+<div id="map"></div>
+
+<script>
+    // 1. 初始化地图
+    // 使用卫星图图层以接近你的截图效果 (这里使用的是 Esri WorldImagery)
+    var map = L.map('map').setView([30.6586, 104.0648], 15); // 示例坐标：成都
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+    }).addTo(map);
+
+    // ==========================================
+    // 2. 核心数学工具函数
+    // ==========================================
+
+    // 将角度转换为弧度
+    function toRad(degree) {
+        return degree * Math.PI / 180;
+    }
+
+    // 将弧度转换为角度
+    function toDeg(radian) {
+        return radian * 180 / Math.PI;
+    }
+
+    /**
+     * 计算目标点坐标
+     * @param {Object} latlng - 起始点 {lat, lng}
+     * @param {Number} bearing - 方位角 (0-360, 0=North, 90=East)
+     * @param {Number} distance - 距离 (米)
+     * @returns {Array} [lat, lng]
+     */
+    function getDestinationPoint(latlng, bearing, distance) {
+        var R = 6378137; // 地球半径 (米)
+        var brng = toRad(bearing);
+        var d = distance;
+        var lat1 = toRad(latlng.lat);
+        var lon1 = toRad(latlng.lng);
+
+        var lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) +
+            Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng));
+
+        var lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1),
+            Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2));
+
+        return [toDeg(lat2), toDeg(lon2)];
+    }
+
+    /**
+     * 生成扇形的多边形路径点
+     * @param {Object} center - 中心点 {lat, lng}
+     * @param {Number} radius - 半径 (米)
+     * @param {Number} direction - 中心朝向角度 (0=North)
+     * @param {Number} spread - 扇形张角 (例如 30度)
+     */
+    function createSectorPoints(center, radius, direction, spread) {
+        var points = [];
+        points.push([center.lat, center.lng]); // 起点是圆心
+
+        var startAngle = direction - (spread / 2);
+        var endAngle = direction + (spread / 2);
+
+        // 为了让弧线平滑，每隔 2 度计算一个点
+        for (var i = startAngle; i <= endAngle; i += 2) {
+            points.push(getDestinationPoint(center, i, radius));
+        }
+        
+        // 确保最后一个点被包含
+        points.push(getDestinationPoint(center, endAngle, radius));
+        
+        points.push([center.lat, center.lng]); // 闭合回圆心
+        return points;
+    }
+
+    // ==========================================
+    // 3. 场景对象初始化
+    // ==========================================
+
+    // 设置中心点和参数
+    var deviceCenter = { lat: 30.6586, lng: 104.0648 };
+    var radius = 500; // 半径 500米
+    var sectorWidth = 30; // 扇形固定 30度
+
+    // 绘制中心设备点 (蓝色圆点)
+    L.circleMarker(deviceCenter, {
+        color: '#fff',
+        fillColor: '#007bff',
+        fillOpacity: 1,
+        radius: 8
+    }).addTo(map).bindPopup("侦测中心");
+
+    // 绘制最大范围圆圈 (辅助线，类似雷达背景)
+    L.circle(deviceCenter, {
+        radius: radius,
+        color: '#33ff33',
+        weight: 1,
+        fill: false,
+        dashArray: '5, 10',
+        opacity: 0.5
+    }).addTo(map);
+
+    // 初始化扇形 (红色区域)
+    var sectorLayer = L.polygon([], {
+        color: '#ff3333',
+        weight: 1,
+        fillColor: '#ff3333',
+        fillOpacity: 0.4
+    }).addTo(map);
+
+    // 初始化无人机图标 (使用简单的 HTML DivIcon)
+    var droneIcon = L.divIcon({
+        className: 'drone-icon',
+        html: '✈️', // 你可以换成图片 <img src="..." />
+        iconSize: [30, 30],
+        iconAnchor: [15, 15] // 居中
+    });
+
+    var droneMarker = L.marker(deviceCenter, {icon: droneIcon}).addTo(map);
+
+    // ==========================================
+    // 4. 模拟数据与动画循环
+    // ==========================================
+
+    // 模拟数据源
+    var currentDirection = 0; // 初始方向 0度 (12点方向)
+
+    function updateRadar() {
+        // 1. 模拟生成一个新的角度 (这里为了演示，每次增加 10 度，或者你可以随机)
+        // 实际使用时，这里应该换成从后端 API 获取的数据
+        currentDirection = (currentDirection + 10) % 360;
+
+        // 更新面板显示
+        document.getElementById('angle-val').innerText = currentDirection;
+
+        // 2. 计算扇形多边形的新坐标
+        var sectorPoints = createSectorPoints(deviceCenter, radius, currentDirection, sectorWidth);
+        sectorLayer.setLatLngs(sectorPoints);
+
+        // 3. 计算无人机位置 (在扇形弧边的正中心)
+        // 也就是距离中心 radius 米，角度为 currentDirection 的点
+        var dronePos = getDestinationPoint(deviceCenter, currentDirection, radius);
+        
+        // 更新无人机位置
+        droneMarker.setLatLng(dronePos);
+        
+        // 也可以让无人机的朝向跟着转 (如果用的是 img 标签，可以通过 CSS transform rotate 来做)
+    }
+
+    // 启动模拟，每 1000ms (1秒) 更新一次
+    setInterval(updateRadar, 1000);
+
+    // 初始执行一次
+    updateRadar();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavOperateLogMapper">
+    <!-- 插入操作日志 -->
+    <insert id="insert" parameterType="org.jeecg.modules.uav.entity.UavOperateLog">
+        INSERT INTO uav_operate_log (
+            station_id, device_type, cmd_type, cmd_name,
+            cmd_param, result, operate_time
+        ) VALUES (
+            #{stationId}, #{deviceType}, #{cmdType}, #{cmdName},
+            #{cmdParam}, #{result}, #{operateTime}
+        )
+    </insert>
+
+    <!-- 按命令类型查询 -->
+    <select id="selectByCmdType" resultType="org.jeecg.modules.uav.entity.UavOperateLog">
+        SELECT * FROM uav_operate_log
+        WHERE cmd_type = #{cmdType}
+          AND station_id = #{stationId}
+        ORDER BY operate_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 按操作结果查询 -->
+    <select id="selectByResult" resultType="org.jeecg.modules.uav.entity.UavOperateLog">
+        SELECT * FROM uav_operate_log
+        WHERE result = #{result}
+          AND device_type = #{deviceType}
+          AND operate_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY operate_time DESC
+    </select>
+</mapper>
+    

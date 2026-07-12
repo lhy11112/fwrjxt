@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14.04" height="18.6" viewBox="0 0 14.04 18.6">
+  <defs>
+    <linearGradient id="linear-gradient" x1="0.5" x2="0.5" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#2900ff"/>
+      <stop offset="1" stop-color="#08f"/>
+    </linearGradient>
+  </defs>
+  <path id="wi-lightning" d="M7.96,24.51h.39l6.88-10.18q.135-.27-.15-.27H12.24l2.99-5.45c.09-.18.02-.27-.2-.27H11.22a.363.363,0,0,0-.29.18l-2.78,7.4c-.02.18.04.27.19.27h2.75Zm8.5-6.33h.27l5.22-7.67a.228.228,0,0,0,.04-.2c-.02-.05-.08-.07-.17-.07h-2.1L21.9,6.21q.18-.3-.18-.3H18.98a.322.322,0,0,0-.3.19L16.6,11.58a.216.216,0,0,0,.01.21.223.223,0,0,0,.19.07h2.04Z" transform="translate(-7.96 -5.91)" fill="url(#linear-gradient)"/>
+</svg>

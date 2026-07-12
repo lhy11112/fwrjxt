@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.uav.mapper.UavConnectLogMapper">
+    <!-- 插入连接日志 -->
+    <insert id="insert" parameterType="org.jeecg.modules.uav.entity.UavConnectLog">
+        INSERT INTO uav_connect_log (
+            station_id, device_ip, device_port, event_type, 
+            event_time, reason
+        ) VALUES (
+            #{stationId}, #{deviceIp}, #{devicePort}, #{eventType},
+            #{eventTime}, #{reason}
+        )
+    </insert>
+
+    <!-- 按站ID和时间范围查询 -->
+    <select id="selectByStationIdAndTimeRange" resultType="org.jeecg.modules.uav.entity.UavConnectLog">
+        SELECT * FROM uav_connect_log
+        WHERE station_id = #{stationId}
+          AND event_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY event_time DESC
+    </select>
+
+    <!-- 批量插入日志 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO uav_connect_log (
+            station_id, device_ip, device_port, event_type, 
+            event_time, reason
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.stationId}, #{item.deviceIp}, #{item.devicePort}, #{item.eventType},
+                #{item.eventTime}, #{item.reason}
+            )
+        </foreach>
+    </insert>
+</mapper>
+    

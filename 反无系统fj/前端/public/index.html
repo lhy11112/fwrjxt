@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" href="./favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>目标防卫场景反无人机应用</title>
+        <link rel="stylesheet" href="/lib/Cesium/Widgets/widgets.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet/leaflet.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/iclient-leaflet.min.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/iclient-plot-leaflet.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet/leaflet.draw.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/css/iconfont.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/css/plotting.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/css/easyui.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/iclient/css/easyui.css" />
+        <!-- <link rel="stylesheet" href="/css/iconfont/iconfont.css"> -->
+        <link rel="stylesheet" href="/css/iconfont/iconfont.css">
+        <link rel="stylesheet" href="/css/iconfont/plotting.css">
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet-miniMap/3.6.1/dist/Control.MiniMap.min.css"/>
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet.draw/1.0.4/leaflet.draw.css"/>
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet-icon-pulse/L.Icon.Pulse.css"/>
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+        <link rel="stylesheet" href="/lib/Build/leaflet/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+        <link rel="stylesheet" href="/lib/zTree_v3/css/zTreeStyle/zTreeStyle.css" />
+        <script src="./config.js"></script>
+        <script src="./wrjxx.js"></script>
+        <style type="text/css">
+        html,body{
+            width: 100%;
+            height: 100%;
+
+        }
+            .panel {
+                height: 100%;
+            }
+
+            .combo-p {
+                height: 200px;
+            }
+
+            .propertygrid {
+                overflow: auto;
+            }
+            .leaflet-div-icon {
+                background-color: transparent;
+                border: none;
+            }
+            .leaflet-editing-icon {
+                background-color: #ffe500;
+                border-radius: 50%;
+            }
+            @font-face {
+                font-family: 'fantFamily';
+                src: url('/font/新汉等宽.ttf');
+                /* url('/font/仿宋_GB2312.ttf'), 
+                    url('/font/楷体_GB2312.ttf'),
+                    url('/font/庞门正道标题体.ttf'),
+                    url('/font/站酷高端黑修订151105.ttf'),
+                    url('/font/站酷快乐体2016修订版.ttf'),
+                    url('/font/站酷庆科黄油体.ttf'),
+                    url('/font/站酷文艺体.ttf'),
+                    url('/font/站酷小薇LOGO体.otf'),
+                    url('/font/字魂5号-无外润黑体.ttf'),
+                    url('/font/苹方/PingFang Bold.ttf'),
+                    url('/font/苹方/PingFang ExtraLight.ttf'),
+                    url('/font/苹方/PingFang Heavy.ttf'),
+                    url('/font/苹方/PingFang Light.ttf'),
+                    url('/font/苹方/PingFang Medium.ttf'), */
+                /* url('/font/苹方/PingFang Regular.ttf'),; */
+            }
+
+            @font-face {
+                /* 正常 */
+                font-family: 'PingFang';
+                src: url('/font/苹方/PingFang Regular.ttf');
+
+            }
+
+            @font-face {
+                /* 加粗标题 */
+                font-family: 'PingFangBold';
+                src: url('/font/苹方/PingFang Bold.ttf');
+
+            }
+            * {
+                font-family: 'PingFangBold', sans-serif;
+            }
+        </style>
+          <script>
+            window._CONFIG = {};
+          </script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <!-- <script type="module" src="/src/main.js"></script> -->
+        <!-- <script src="/lib/zTree_v3/js/jquery.ztree.core.min.js"></script> -->
+        <script src="/lib/Cesium/Cesium.js"></script>
+        <script src="/lib/Cesium/popup.js"></script>
+        <script src="/lib/Cesium/ThirdParty/Workers/PlotAlgo/PlotAlgoInclude.js"></script>
+        <script src="/lib/Build/leaflet/iclient/jquery.min.js"></script>
+        <script src="/lib/Build/leaflet/leaflet/leaflet.js"></script>
+        <script src="/lib/Build/leaflet/iclient/iclient-leaflet-es6.min.js"></script>
+        <script src="/lib/Build/leaflet/leaflet/leaflet.draw.js"></script>
+        <script src="/lib/Build/leaflet/iclient/iclient-plot-leaflet-es6.min.js"></script>
+        <script src="/lib/Build/leaflet/iclient/iclient-plot-algorithms-wj-es6.min.js"></script>
+        <script src="/lib/Build/leaflet/iclient/jquery.easyui.min.js"></script>
+        <script src="/lib/Build/leaflet/iclient/jquery.ztree.core.js"></script>
+        <script src="/lib/Build/leaflet/iclient/PlotPanel.js"></script>
+        <script src="/lib/Build/leaflet/iclient/StylePanel.js"></script>
+        <script src="/lib/Build/leaflet/iclient/PublicStyleFunction.js"></script>
+        <script src="/lib/Build/leaflet/iclient/SMLInfosPanel.js"></script>
+        <script src="/lib/Build/leaflet/leaflet-miniMap/3.6.1/dist/Control.MiniMap.min.js"></script>
+        <script src="/lib/Build/leaflet/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+        <script src="/lib/Build/leaflet/leaflet-icon-pulse/L.Icon.Pulse.js"></script>
+        <script src="/lib/Build/leaflet/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+        <script src="/lib/Build/leaflet/turf/6.5.0/turf.min.js"></script>
+        
+        <script src="/lib/base64.min.js"></script>
+    </body>
+</html>

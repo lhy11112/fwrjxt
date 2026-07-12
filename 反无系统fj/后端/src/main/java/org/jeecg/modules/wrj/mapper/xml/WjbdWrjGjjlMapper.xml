@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.jeecg.modules.wrj.mapper.WjbdWrjGjjlMapper">
+
+    <!-- 按年统计：年度  空域/无人机 维度 统计次数 -->
+    <select id="getGjtjCountByNf" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) AS nf,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL and YEAR(gjfssj) = #{gjtjVo.nf}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) AS nf,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL and YEAR(gjfssj) = #{gjtjVo.nf}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 按季度统计：年+季度+空域/无人机 维度 -->
+    <select id="getGjtjCountByJd" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND QUARTER(gjfssj) = #{gjtjVo.jd}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,jd DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND QUARTER(gjfssj) = #{gjtjVo.jd}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,jd DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 按月统计：年+月+空域/无人机 维度 -->
+    <select id="getGjtjCountByYf" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND MONTH(gjfssj) = #{gjtjVo.yf}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,yf DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND MONTH(gjfssj) = #{gjtjVo.yf}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,yf DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 按周统计：年+周+空域/无人机 维度 -->
+    <select id="getGjtjCountByZs" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND WEEK(gjfssj,1) = #{gjtjVo.zs}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,zs DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and YEAR(gjfssj) = #{gjtjVo.nf} AND WEEK(gjfssj,1) = #{gjtjVo.zs}
+            GROUP BY  kymc,wrjxh
+            ORDER BY nf,zs DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 按单日统计：日期+空域/无人机 维度 -->
+    <select id="getGjtjCountByDay" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,DATE(gjfssj) as rq,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL and DATE(gjfssj) = #{gjtjVo.rq}
+            GROUP BY kymc,wrjxh
+            ORDER BY rq DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,DATE(gjfssj) as rq,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL and DATE(gjfssj) = #{gjtjVo.rq}
+            GROUP BY kymc,wrjxh
+            ORDER BY rq DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 按自定义时间段统计：日期+空域/无人机 维度 -->
+    <select id="getGjtjCountByZdy" resultType="java.util.Map">
+        <if test="gjtjVo.lx=='无人机'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,DATE(gjfssj) as rq,
+            wrjxh AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and DATE(gjfssj) BETWEEN #{gjtjVo.startDate} AND #{gjtjVo.endDate}
+            GROUP BY  kymc,wrjxh
+            ORDER BY rq DESC, value DESC) t GROUP BY mc
+        </if>
+        <if test="gjtjVo.lx=='空域'">
+            SELECT nf,mc,sum(value) as value from (
+            SELECT
+            YEAR(gjfssj) as nf,QUARTER(gjfssj) AS jd,MONTH(gjfssj) as yf,WEEK(gjfssj,1) as zs,DATE(gjfssj) as rq,
+            kymc AS mc,
+            COUNT(DISTINCT alarm_group_id) AS value
+            FROM wjbd_wrj_gj_view
+            WHERE gjfssj IS NOT NULL  and DATE(gjfssj) BETWEEN #{gjtjVo.startDate} AND #{gjtjVo.endDate}
+            GROUP BY  kymc,wrjxh
+            ORDER BY rq DESC, value DESC) t GROUP BY mc
+        </if>
+    </select>
+
+    <!-- 明细查询 无需修改 -->
+    <select id="getQstjEj" resultType="org.jeecg.modules.wrj.entity.WjbdWrjGjjl">
+        select * from wjbd_wrj_gjjl
+        <where>
+            <if test="gjtjVo.nf!=null and gjtjVo.nf!=''">
+                YEAR(gjfssj) = #{gjtjVo.nf}
+            </if>
+            <if test="gjtjVo.jd!=null and gjtjVo.jd!=''">
+                and QUARTER(gjfssj) = #{gjtjVo.jd}
+            </if>
+            <if test="gjtjVo.yf!=null and gjtjVo.yf!=''">
+                and MONTH(gjfssj) = #{gjtjVo.yf}
+            </if>
+            <if test="gjtjVo.zs!=null and gjtjVo.zs!=''">
+                and WEEK(gjfssj,1) = #{gjtjVo.zs}
+            </if>
+            <if test="gjtjVo.rq!=null and gjtjVo.rq!=''">
+                and date(gjfssj) = #{gjtjVo.rq}
+            </if>
+            <if test="gjtjVo.wrjid!=null and gjtjVo.wrjid!=''">
+                and wrjid = #{gjtjVo.wrjid}
+            </if>
+            <if test="gjtjVo.kyid!=null and gjtjVo.kyid!=''">
+                and kyid = #{gjtjVo.kyid}
+            </if>
+            <if test="gjtjVo.startDate!=null and gjtjVo.endDate!=''">
+                and DATE(gjfssj) BETWEEN #{gjtjVo.startDate} AND #{gjtjVo.endDate}
+            </if>
+            order by gjfssj desc
+        </where>
+    </select>
+    <!-- 告警情况统计一级数据查询 -->
+    <select id="getGjQkTJ" resultType="org.jeecg.modules.wrj.entity.WjbdWrjGjjl">
+        select * from wjbd_wrj_gjjl
+        <where>
+            <if test="wjbdWrjGjjlDto.startDate!=null and wjbdWrjGjjlDto.endDate!=''">
+                 DATE(gjfssj) BETWEEN #{wjbdWrjGjjlDto.startDate} AND #{wjbdWrjGjjlDto.endDate}
+            </if>
+
+        </where>
+        GROUP BY wrjxh,wrjxlh
+    </select>
+</mapper>

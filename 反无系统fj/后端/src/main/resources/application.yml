@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: jeecg-system
+  profiles:
+    active: 'dev'
+# dev 本地开发    prod 线上  test  测试  one 一级部署 kundb为主  two 二级部署 mysql为主

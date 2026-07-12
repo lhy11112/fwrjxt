@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>3D Tiles模型</title>
+    
+    <script src="./lib/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="./lib/Cesium/Widgets/widgets.css" />
+    <style>
+        #toolbar input {
+            vertical-align: middle;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            margin: 10px 0px;
+            width:150px;
+        }
+    </style>
+</head>
+<body>
+<div id="cesiumContainer"></div>
+<div id="toolbar" class="param-container tool-bar">
+    <table>
+        <tbody>
+        <tr>
+            <td>亮度</td>
+            <td>
+                <input type="range" min="0" max="2" step="0.02" data-bind="value: brightness, valueUpdate: 'input'">
+            </td>
+        </tr>
+        <tr>
+            <td>对比度</td>
+            <td>
+                <input type="range" min="0" max="2" step="0.02" data-bind="value: contrast, valueUpdate: 'input'">
+            </td>
+        </tr>
+        <tr>
+            <td>色调</td>
+            <td>
+                <input type="range" min="-1" max="1" step="0.02" data-bind="value: hue, valueUpdate: 'input'">
+            </td>
+        </tr>
+        <tr>
+            <td>饱和度</td>
+            <td>
+                <input type="range" min="0" max="2" step="0.02" data-bind="value: saturation, valueUpdate: 'input'">
+            </td>
+        </tr>
+        <tr>
+            <td>伽马</td>
+            <td>
+                <input type="range" min="0" max="2" step="0.02" data-bind="value: gamma, valueUpdate: 'input'">
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div id="loadingbar" class="spinner">
+    <div class="spinner-container container1">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+    </div>
+    <div class="spinner-container container2">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+    </div>
+    <div class="spinner-container container3">
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="circle3"></div>
+        <div class="circle4"></div>
+    </div>
+</div>
+<script type="text/javascript">
+    function onload(Cesium) {
+        var viewer = new Cesium.Viewer('cesiumContainer');
+        var scene = viewer.scene;
+        scene.lightSource.ambientLightColor = new Cesium.Color(0.5, 0.5, 0.5, 1);
+        var widget = viewer.cesiumWidget;
+        var sceneLayer = null;
+
+        // 替换为你的3D Tiles URL
+        var tilesetUrl = 'http://localhost/3dtiles/tileset.json';
+        
+        var promise = new Cesium.Cesium3DTileset(tilesetUrl, {
+            viewer: viewer
+        });
+
+        promise.then(function(tileset) {
+            sceneLayer = tileset;
+            // 隐藏加载条
+            $('#loadingbar').remove();
+            
+            // 设置相机位置
+            viewer.camera.setView({
+                position: Cesium.Cartesian3.fromDegrees(116.5703, 39.915, 1000), // 北京地区的经度、纬度和高度
+                orientation: {
+                    heading: Cesium.Math.toRadians(0), // 朝向东方
+                    pitch: Cesium.Math.toRadians(-45), // 仰角
+                    roll: 0
+                }
+            });
+        }).catch(function(error) {
+            console.error('加载3D Tiles失败:', error);
+            if (widget._showRenderLoopErrors) {
+                var title = '渲染时发生错误，已停止渲染。';
+                widget.showErrorPanel(title, undefined, error);
+            }
+        });
+
+        $('#toolbar').show();
+
+        // 初始化ViewModel
+        var viewModel = {
+            brightness: 1,
+            contrast: 1,
+            hue: 0,
+            saturation: 1,
+            gamma: 1
+        };
+        Cesium.knockout.track(viewModel);
+        var toolbar = document.getElementById('toolbar');
+        Cesium.knockout.applyBindings(viewModel, toolbar);
+
+    }
+    if (typeof Cesium !== 'undefined') {
+        window.startupCalled = true;
+        onload(Cesium);
+    }
+</script>
+</body>
+</html>
